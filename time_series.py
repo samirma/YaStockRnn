@@ -1,6 +1,6 @@
 # define generator
-def get_gen(set_x, set_y, n_input = 200):
-    return TimeseriesGenerator(set_x, set_y, length=n_input, batch_size=128*2)
+def get_gen(set_x, set_y, n_input = 200, batch = 128*2):
+    return TimeseriesGenerator(set_x, set_y, length=n_input, batch_size=batch)
 
 train_generator = get_gen(trainX, trainY)
 
