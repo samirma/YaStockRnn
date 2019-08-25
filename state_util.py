@@ -80,12 +80,16 @@ def get_state(raw_state, data_gen):
     current_price = raw_state["price"]
     current_timestamp = int(raw_state['timestamp'])
     
+    ask = float(raw_state["asks"][1][0]) 
     best_bid = float(furure_state["bids"][0][0]) 
-    is_value_incresed = best_bid >= (current_price + 0.2)
+    is_value_incresed = best_bid >= (ask + 0.2)
 
     if is_value_incresed:
         should_buy += 1
-        #print (current_price, " ==== ", (current_price + 0.2), " ===== ", furure_state)
+        #print (ask, " ==== ", (ask + 0.2), " ===== ", best_bid)
+        #print(raw_state)
+        #print(furure_state)
+        #print("=====")
         y = onehot_encoded(0)
     else:
         #print (current_price, " ==== ", (current_price + 0.2), " ===== ", furure_state)
