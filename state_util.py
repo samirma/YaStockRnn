@@ -3,6 +3,17 @@ last_time = 0
 should_buy = 0
 should_sell = 0
 
+
+# integer encode input data
+def onehot_encoded (integer_encoded, char_to_int = 2):
+    # one hot encode
+    onehot_encoded = list()
+    letter = [0 for _ in range(char_to_int)]
+    letter[integer_encoded] = 1
+    onehot_encoded.append(letter)
+
+    return onehot_encoded[0]
+
 def get_date(state):
     timestamp = int(state["timestamp"])
     return datetime.fromtimestamp(timestamp)
@@ -41,21 +52,21 @@ def get_parse_state(raw_state, last_price, last_time):
     #print(current_timestamp)
     return list
 
-def get_future_state(df, sec=120): # 2 min in future
-    state_timestamp = int(dt.get_from_index(dt.index-1)['timestamp'])
+def get_future_state(data_gen, sec=120): # 2 min in future
+    state_timestamp = int(data_gen.get_from_index(data_gen.index-1)['timestamp'])
     timestamp_limit = state_timestamp + sec
     #print("Current timestamp", state_timestamp, " ==== ", timestamp_limit)
     index = 0
     timestamp = 0
     while timestamp < timestamp_limit:
         index += 3
-        state = dt.get_from_index(dt.index + index)
+        state = data_gen.get_from_index(data_gen.index + index)
         timestamp = int(state['timestamp'])
     return state
 
 
 
-def get_state(raw_state):
+def get_state(raw_state, data_gen):
     global last_price
     global last_time
     global should_buy
@@ -63,18 +74,22 @@ def get_state(raw_state):
     
     list = get_parse_state(raw_state, last_price, last_time)
 
-    furure_state = get_future_state(dt)
+    furure_state = get_future_state(data_gen)
     future_price = furure_state["price"]
     
     current_price = raw_state["price"]
     current_timestamp = int(raw_state['timestamp'])
     
+    ask = float(raw_state["asks"][1][0]) 
     best_bid = float(furure_state["bids"][0][0]) 
-    is_value_incresed = best_bid >= (current_price + 0.2)
+    is_value_incresed = best_bid >= (ask + 0.2)
 
     if is_value_incresed:
         should_buy += 1
-        #print (current_price, " ==== ", (current_price + 0.2), " ===== ", furure_state)
+        #print (ask, " ==== ", (ask + 0.2), " ===== ", best_bid)
+        #print(raw_state)
+        #print(furure_state)
+        #print("=====")
         y = onehot_encoded(0)
     else:
         #print (current_price, " ==== ", (current_price + 0.2), " ===== ", furure_state)

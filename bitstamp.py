@@ -44,7 +44,7 @@ def trade_callback(data):
 
 def order_book_callback(data):
     current_state = json.loads(data)
-    orders_limit = 10
+    orders_limit = 19
     current_state["bids"] = current_state["bids"][:orders_limit]
     current_state["asks"] = current_state["asks"][:orders_limit]
     last_trade = load_trade()

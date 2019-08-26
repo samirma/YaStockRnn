@@ -8,7 +8,7 @@ class DataGenerator:
         self.base_dir = base_dir
         self.files = os.listdir(self.base_dir)
         self.files.sort()
-        self.steps = len(self.files)
+        self.steps = len(self.files) - 1000
         self.first_index = first_index
         self.index = self.first_index
         self.is_random = random
