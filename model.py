@@ -10,6 +10,8 @@ from tensorflow.keras import Model, Sequential
 
 from tensorflow.keras import datasets, layers, models
 
+from attention import Attention, SelfAttention
+
 import tensorflow as tf
 
 def get_model(n_input, features):
@@ -31,7 +33,9 @@ def get_model(n_input, features):
 
     #x = Bidirectional(LSTM(features*20, return_sequences=True))(inputX)
     x = Bidirectional(LSTM(200, return_sequences=True))(inputX)
-    x = Bidirectional(layers.LSTM(100))(x)
+    #x = Bidirectional(layers.LSTM(100))(x)
+    
+    x, attention_weights = SelfAttention(size=128, num_hops=10, use_penalization=False)(x)
 
     #lstm = LSTM(features*40)(inputX)
     #x = add_deep_layers(lstm)
