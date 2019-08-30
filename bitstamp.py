@@ -69,8 +69,8 @@ class BitStamp:
         pusher.connect()
         self.pusher = pusher
         
-        #while True:
-        #    time.sleep(3)
+        while True:
+            time.sleep(3)
         
     def stop(self):
         self.pusher.disconnect()
