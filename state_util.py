@@ -87,7 +87,7 @@ def get_state(raw_state, data_gen):
 
     if is_value_incresed:
         should_buy += 1
-        print (ask, " ==== ", predicted, " ===== ", best_bid)
+        #print (ask, " ==== ", predicted, " ===== ", best_bid)
         #print(raw_state)
         #print(furure_state)
         #print("=====")
