@@ -51,7 +51,7 @@ def get_model(n_input, features):
     x = tf.keras.layers.LeakyReLU(alpha=0.3)(x)
     x = Dense(100)(x)
     x = tf.keras.layers.LeakyReLU(alpha=0.3)(x)
-    x = Dense(3, activation='softmax')(x)
+    x = Dense(2, activation='softmax')(x)
 
     model = Model(inputs=[inputX], outputs=x)
 

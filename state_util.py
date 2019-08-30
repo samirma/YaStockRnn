@@ -6,7 +6,7 @@ should_sell = 0
 from datetime import datetime
 
 # integer encode input data
-def onehot_encoded (integer_encoded, char_to_int = 3):
+def onehot_encoded (integer_encoded, char_to_int = 2):
     # one hot encode
     onehot_encoded = list()
     letter = [0 for _ in range(char_to_int)]
@@ -97,14 +97,14 @@ def get_state(raw_state, data_gen):
         #print(furure_state)
         #print("=====")
         y = onehot_encoded(0)
-    elif will_offer_less:
+    #elif will_offer_less:
         #print (get_date(raw_state), ": ", current_bid, " #### ", (current_price + 0.2), " #### ", future_bid)
-        should_sell += 1
-        y = onehot_encoded(1)
+    #    should_sell += 1
+    #    y = onehot_encoded(2)
     else:
         #print (current_price, " ==== ", (current_price + 0.2), " ===== ", furure_state)
         should_sell += 1
-        y = onehot_encoded(2)
+        y = onehot_encoded(1)
            
     #print (y)
     #print (get_date(raw_state), " ==== ", get_date(furure_state))
