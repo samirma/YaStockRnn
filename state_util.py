@@ -81,12 +81,13 @@ def get_state(raw_state, data_gen):
     current_timestamp = int(raw_state['timestamp'])
     
     ask = float(raw_state["asks"][1][0]) 
-    best_bid = float(furure_state["bids"][0][0]) 
-    is_value_incresed = best_bid >= (ask + 0.2)
+    best_bid = float(furure_state["bids"][1][0])
+    predicted = (ask * 1.0002)
+    is_value_incresed = best_bid >= predicted
 
     if is_value_incresed:
         should_buy += 1
-        #print (ask, " ==== ", (ask + 0.2), " ===== ", best_bid)
+        print (ask, " ==== ", predicted, " ===== ", best_bid)
         #print(raw_state)
         #print(furure_state)
         #print("=====")
