@@ -19,6 +19,8 @@ def get_model(n_input, features):
         x = Dense(300)(input_layer)
         x = tf.keras.layers.LeakyReLU(alpha=0.3)(x)
         x_shorcut = x
+        x_shorcut = Dense(300)(x_shorcut)
+        x_shorcut = tf.keras.layers.LeakyReLU(alpha=0.3)(x_shorcut)
         x = Dense(300)(x)
         x = Dropout(0.2)(x)
         x = tf.keras.layers.LeakyReLU(alpha=0.3)(x)
@@ -30,7 +32,7 @@ def get_model(n_input, features):
 
 
     #x = Bidirectional(LSTM(features*20, return_sequences=True))(inputX)
-    x = Bidirectional(LSTM(200, return_sequences=True))(inputX)
+    x = Bidirectional(LSTM(250, return_sequences=True))(inputX)
     x = Bidirectional(layers.LSTM(100))(x)
 
     #lstm = LSTM(features*40)(inputX)
@@ -49,11 +51,9 @@ def get_model(n_input, features):
     x = tf.keras.layers.LeakyReLU(alpha=0.3)(x)
     x = Dense(100)(x)
     x = tf.keras.layers.LeakyReLU(alpha=0.3)(x)
-    x = Dense(2, activation='softmax')(x)
+    x = Dense(3, activation='softmax')(x)
 
     model = Model(inputs=[inputX], outputs=x)
-
-    filepath = "drive/My Drive/model/stock.h5"
 
     model.compile(optimizer=tf.keras.optimizers.Adam(lr=0.0001, epsilon=1e-6),
                   loss='categorical_crossentropy',

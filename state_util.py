@@ -3,9 +3,10 @@ last_time = 0
 should_buy = 0
 should_sell = 0
 
+from datetime import datetime
 
 # integer encode input data
-def onehot_encoded (integer_encoded, char_to_int = 2):
+def onehot_encoded (integer_encoded, char_to_int = 3):
     # one hot encode
     onehot_encoded = list()
     letter = [0 for _ in range(char_to_int)]
@@ -80,22 +81,30 @@ def get_state(raw_state, data_gen):
     current_price = raw_state["price"]
     current_timestamp = int(raw_state['timestamp'])
     
-    ask = float(raw_state["asks"][1][0]) 
-    best_bid = float(furure_state["bids"][1][0])
+    current_bid = float(raw_state["bids"][0][0])
+    future_bid = float(furure_state["bids"][0][0])
+
+    will_offer_less = (future_bid/current_bid) < 0.99998
+
+    ask = float(raw_state["asks"][0][0]) 
     predicted = (ask * 1.0002)
-    is_value_incresed = best_bid >= predicted
+    is_value_incresed = future_bid >= predicted
 
     if is_value_incresed:
         should_buy += 1
-        #print (ask, " ==== ", predicted, " ===== ", best_bid)
+        #print (get_date(raw_state), ": ", ask, " ==== ", predicted, " ===== ", get_date(furure_state), " ===== ", future_bid)
         #print(raw_state)
         #print(furure_state)
         #print("=====")
         y = onehot_encoded(0)
+    elif will_offer_less:
+        #print (get_date(raw_state), ": ", current_bid, " #### ", (current_price + 0.2), " #### ", future_bid)
+        should_sell += 1
+        y = onehot_encoded(1)
     else:
         #print (current_price, " ==== ", (current_price + 0.2), " ===== ", furure_state)
         should_sell += 1
-        y = onehot_encoded(1)
+        y = onehot_encoded(2)
            
     #print (y)
     #print (get_date(raw_state), " ==== ", get_date(furure_state))
