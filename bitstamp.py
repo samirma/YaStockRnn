@@ -2,40 +2,80 @@ import json
 import websocket
 from time import sleep
 from threading import Thread, Lock
+import state_util
+from numpy import array
+from tqdm import tqdm
 
-trade = None
 
-def save_trade(data):
-    global trade
-    trade = data
-        
-def load_trade():
-    return trade
+class LiveBitstamp:
+    def __init__(self, list_limit, on_list_full = lambda : print("list full")):
+        self.trade = {}
+        self.raw_states_list = []
+        self.last_timestamp = 0
+        self.list_limit = list_limit
+        self.last_price = 0
+        self.last_time = 0
+        self.on_list_full = on_list_full
+        self.last_raw_state = {}
 
-      
-def save_state(data):
-    print(data)
-        
+    def save_trade(self, data):
+        self.trade = data
+
+    def process(self, data):
+        current_count = len(self.raw_states_list)
+        timestamp = data['timestamp']
+        if (timestamp != self.last_timestamp):
+            self.raw_states_list.append(data)
+            if (current_count < self.list_limit):
+                if (current_count == 0):
+                  self.pbar = tqdm(total=self.list_limit)
+                self.pbar.update(1)
+                if (current_count == self.list_limit-1):
+                  self.pbar.close()
+            
+        self.last_timestamp = timestamp
+        if (len(self.raw_states_list) > self.list_limit):
+            self.raw_states_list.pop(0)
+            self.on_list_full(self)
+            
     
-def trade_callback(data): 
-    save_trade(data)
+    def trade_callback(self,data):
+        self.last_price = data["price"]
+        self.save_trade(data)
 
-def order_book_callback(current_state):
-    last_trade = load_trade()
-    if (last_trade is not None):
-        orders_limit = 19
-        current_state["bids"] = current_state["bids"][:orders_limit]
-        current_state["asks"] = current_state["asks"][:orders_limit]
-        current_state["amount"] = last_trade["amount"]
-        current_state["price"] = last_trade["price"]
-        save_state(current_state)
+    def order_book_callback(self, current_state):
+        last_trade = self.trade
+        should_process = len(last_trade) > 0
+        self.last_time = int(current_state['timestamp'])
+        if (should_process):
+            orders_limit = 19
+            current_state["bids"] = current_state["bids"][:orders_limit]
+            current_state["asks"] = current_state["asks"][:orders_limit]
+            current_state["amount"] = last_trade["amount"]
+            current_state["price"] = last_trade["price"]
+            self.last_raw_state = current_state
+            self.process(current_state)
     
+    def start_live(self):
+        bt = Bitstamp(self)
+        bt.connect
+        self.thread = Thread(target=bt.connect)
+        self.thread.daemon = True
+        self.thread.start()
+        
+    def get_processed_data(self):
+        processed_data = []
+        for raw_state in self.raw_states_list:
+          state = state_util.get_parse_state(raw_state, self.last_price, self.last_time)
+          processed_data.append(state)
+        return np.array(processed_data)
 
 class Bitstamp:
-    def __init__(self):
+    def __init__(self, liveStates):
         self.base_url = "wss://ws.bitstamp.net"
         self.trade_ch = "live_trades_btcusd"
         self.bookings_ch = "order_book_btcusd"
+        self.liveStates = liveStates
 
     def connect(self):
         self.ws = websocket.WebSocketApp(self.base_url,
@@ -60,15 +100,20 @@ class Bitstamp:
             self.reconnect()
 
     def __on_message(self, message):
-        raw_json = json.loads(message)
-        channel = raw_json["channel"]
-        data = raw_json["data"]
-        if (channel == self.bookings_ch):
-            order_book_callback(data)
+        try:
+            raw_json = json.loads(message)
+            channel = raw_json["channel"]
+            data = raw_json["data"]
+            if (len(data) != 0):
+                #print(channel)
+                if (channel == self.bookings_ch):
+                    #print("pre")
+                    self.liveStates.order_book_callback(data)
+                    #print("pos")
+                if (channel == self.trade_ch):
+                    self.liveStates.trade_callback(data)
+        except Exception as e: print("Unexpected error:", e)
         
-        if (channel == self.trade_ch):
-            print("trade")
-            trade_callback(data)
 
     def isConnected(self):
         return self.ws.sock and self.ws.sock.connected
@@ -109,4 +154,3 @@ class Bitstamp:
             }
         }
         self.ws.send(json.dumps(payload))
-        print("subscribe")
