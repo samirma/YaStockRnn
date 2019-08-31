@@ -1,79 +1,112 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-import sys
-import pusherclient #live stream client: https://github.com/ekulyk/PythonPusherClient
-import logging
-import time
 import json
+import websocket
+from time import sleep
+from threading import Thread, Lock
 
-global current_state
-
-
-pusher = {}
-
-trade_file = '/tmp/trade.json'
-state_file = '/tmp/state.json'
-
+trade = None
 
 def save_trade(data):
-    with open(trade_file, 'w') as file:
-        file.write(data)
+    global trade
+    trade = data
         
 def load_trade():
-    trades_file = open(trade_file,'r')
-    last_trade = json.loads(trades_file.read())
-    trades_file.close
-    return last_trade
+    return trade
 
       
 def save_state(data):
-    with open(state_file, 'w') as file:
-        file.write(json.dumps(data))
+    print(data)
         
-def load_state():
-    trades_file = open(state_file,'r')
-    last_trade = json.loads(trades_file.read())
-    trades_file.close
-    return last_trade
-      
-    
     
 def trade_callback(data): 
-        save_trade(data)
+    save_trade(data)
 
-def order_book_callback(data):
-    current_state = json.loads(data)
-    orders_limit = 19
-    current_state["bids"] = current_state["bids"][:orders_limit]
-    current_state["asks"] = current_state["asks"][:orders_limit]
+def order_book_callback(current_state):
     last_trade = load_trade()
-    current_state["amount"] = last_trade["amount"]
-    current_state["price"] = last_trade["price"]
-    save_state(current_state)
+    if (last_trade is not None):
+        orders_limit = 19
+        current_state["bids"] = current_state["bids"][:orders_limit]
+        current_state["asks"] = current_state["asks"][:orders_limit]
+        current_state["amount"] = last_trade["amount"]
+        current_state["price"] = last_trade["price"]
+        save_state(current_state)
     
 
-class BitStamp:
+class Bitstamp:
+    def __init__(self):
+        self.base_url = "wss://ws.bitstamp.net"
+        self.trade_ch = "live_trades_btcusd"
+        self.bookings_ch = "order_book_btcusd"
 
-    def start(self):
+    def connect(self):
+        self.ws = websocket.WebSocketApp(self.base_url,
+                                         on_message=self.__on_message,
+                                         on_close=self.__on_close,
+                                         on_open=self.__on_open,
+                                         on_error=self.__on_error)
+
+        self.ws.run_forever()
+
+
+    def __on_error(self, error):
+        print(str(error))
+
+    def __on_open(self):
+        print("Bitstamp Websocket Opened.")
+        self.subscribe()
+
+    def __on_close(self):
+        print("Bitstamp Websocket Closed.")
+        if not self.exited:
+            self.reconnect()
+
+    def __on_message(self, message):
+        raw_json = json.loads(message)
+        channel = raw_json["channel"]
+        data = raw_json["data"]
+        if (channel == self.bookings_ch):
+            order_book_callback(data)
         
-        def connect_handler(data):
-            print("connect_handler")
-            trades_channel = pusher.subscribe("live_trades")
-            trades_channel.bind('trade', trade_callback)
-            order_book_channel = pusher.subscribe('order_book');
-            order_book_channel.bind('data', order_book_callback)
-        
-        pusher = pusherclient.Pusher("de504dc5763aeef9ff52")
-        pusher.connection.bind('pusher:connection_established', connect_handler)
-        pusher.connect()
-        self.pusher = pusher
-        
-        while True:
-            time.sleep(3)
-        
-    def stop(self):
-        self.pusher.disconnect()
-        
-    def get_current_state(self):
-        return load_state()
+        if (channel == self.trade_ch):
+            print("trade")
+            trade_callback(data)
+
+    def isConnected(self):
+        return self.ws.sock and self.ws.sock.connected
+
+    def disconnect(self):
+        self.exited = True
+        self.timer.cancel()
+        self.callbacks = {}
+        self.ws.close()
+        self.logger.info('Bitstamp Websocket Disconnected')
+
+    def reconnect(self):
+        if self.ws is not None and self.isConnected():
+            self.disconnect()
+        self.connect()
+
+    def __restart_ping_timer(self):
+        if self.timer.isAlive():
+            self.timer.cancel()
+        self.timer = Timer(180, self.ping)
+        self.timer.start()
+
+    def ping(self):
+        self.ws.send('pong')
+
+    def subscribe(self):
+        payload = {
+            "event": "bts:subscribe",
+            "data": {
+                "channel": self.trade_ch
+            }
+        }
+        self.ws.send(json.dumps(payload))
+        payload = {
+            "event": "bts:subscribe",
+            "data": {
+                "channel": self.bookings_ch
+            }
+        }
+        self.ws.send(json.dumps(payload))
+        print("subscribe")
