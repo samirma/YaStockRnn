@@ -2,21 +2,24 @@ from tqdm import tqdm
 import os
 import state_util
 import numpy as np
+from state_util import StateUtil
 
 def get_set(set_name, data_count, data_gen, path = "drive/My Drive/model/"):
     trainX = []
     trainY = []
     x_path = path + set_name + "X.npy"
     y_path = path + set_name + "Y.npy"
-
+    
+    stateUtil = StateUtil()
+    
     if (os.path.exists(x_path) and (os.path.exists(y_path))):
-        print("Loading data from files")
+        print("Loading data from files {} {}".format(x_path, y_path))
         trainX = np.load(x_path)
         trainY = np.load(y_path)
     else:
         for i in tqdm(range(data_count)):
             state = data_gen.next()
-            state = state_util.get_state(state, data_gen)
+            state = stateUtil.get_state(state, data_gen)
             trainX.append(state[0])
             trainY.append(state[1])
     trainX = np.array(trainX)

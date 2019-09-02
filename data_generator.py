@@ -4,7 +4,7 @@ import io
 import random
 
 class DataGenerator:
-    def __init__(self, random=True, first_index=0, base_dir = "stock_data/"):
+    def __init__(self, random=False, first_index=0, base_dir = "stock_data/"):
         self.base_dir = base_dir
         self.files = os.listdir(self.base_dir)
         self.files.sort()
@@ -19,6 +19,12 @@ class DataGenerator:
         f = io.open(file_path, mode="r", encoding="utf-8")
         raw = f.read()
         return json.loads(raw)
+    
+    def get_json_from_timestamp(self, timestamp):
+        file_name = "{}.json".format(timestamp)
+        if file_name in self.files:
+            return self.get_from_index(self.files.index(file_name))
+        return False
         
     def next(self, index = -1):
         #print("next %s %s %s" % (self.index, self.steps, self.has_next()))
