@@ -100,7 +100,7 @@ class StateUtil():
 
         if is_value_incresed:
             self.should_buy += 1
-            print (self.get_date(raw_state), ": ", ask, " ==== ", predicted, " ===== ", self.get_date(furure_state), " ===== ", future_bid)
+            #print (self.get_date(raw_state), ": ", ask, " ==== ", predicted, " ===== ", self.get_date(furure_state), " ===== ", future_bid)
             #print(raw_state)
             #print(furure_state)
             #print("=====")

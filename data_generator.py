@@ -14,16 +14,19 @@ class DataGenerator:
         self.is_random = random
         self.index = first_index
 
-    def get_from_index(self, index):
-        file_path = self.base_dir + self.files[index]
+    def read_json_from_file(self, file_path):
         f = io.open(file_path, mode="r", encoding="utf-8")
         raw = f.read()
         return json.loads(raw)
     
+    def get_from_index(self, index):
+        file_path = self.base_dir + self.files[index]
+        return self.read_json_from_file(file_path)
+    
     def get_json_from_timestamp(self, timestamp):
-        file_name = "{}.json".format(timestamp)
-        if file_name in self.files:
-            return self.get_from_index(self.files.index(file_name))
+        file_path = "{}{}.json".format(self.base_dir, timestamp)
+        if os.path.exists(file_path) :
+            return self.read_json_from_file(file_path)
         return False
         
     def next(self, index = -1):
