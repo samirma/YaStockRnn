@@ -43,37 +43,24 @@ class StateUtil():
         asks = raw_state[self.ASKS_KEY][:history_step]
         prepare_orders(bids, price, 1)
         prepare_orders(asks, price, -1)
-
-        #if last_price != 0:
-        #    list.extend([price/last_price])
-        #else:
-        #    list.extend([0])
-
-        #current_timestamp = int(raw_state[self.TIMESTAMP_KEY])
-        #if last_time != 0:
-        #    list.extend([current_timestamp / last_time])
-        #else:
-        #    list.extend([0])
-        #list = []
-        #list.extend([raw_state['timestamp']])
-        #print(current_timestamp)
+        
         return list
 
-    def get_future_state(self, data_gen, sec=120): # 2 min in future
-        state_timestamp = int(data_gen.get_from_index(data_gen.index-1)[self.TIMESTAMP_KEY])
-        
+    def get_future_state(self,state_timestamp, data_gen, sec=120): # 2 min in future
         timestamp_limit = state_timestamp + sec
         #print("Current timestamp", state_timestamp, " ==== ", timestamp_limit)
         index = 0
         timestamp = 0
         while timestamp < timestamp_limit:
-            state = data_gen.get_json_from_timestamp(timestamp_limit + index)
-            if (state):
-                timestamp_found = int(state[self.TIMESTAMP_KEY])
-                #print("Current timestamp", state_timestamp, " ==== ", timestamp_found)
-                return state
+            states = data_gen.get_json_from_timestamp(timestamp_limit + index)
+            if (states):
+                state = states[-1]
+                if (state):
+                    timestamp_found = int(state[self.TIMESTAMP_KEY])
+                    #print("Current timestamp", state_timestamp, " ==== ", timestamp_found)
+                    return state
             index += 1
-        return False
+        return None
 
     
     def get_bid_goal(self, ask):
@@ -82,13 +69,14 @@ class StateUtil():
     def get_state(self, raw_state, data_gen):
 
         list = self.get_parse_state(raw_state)
+        
+        current_timestamp = int(raw_state[self.TIMESTAMP_KEY])
 
-        furure_state = self.get_future_state(data_gen)
+        furure_state = self.get_future_state(current_timestamp, data_gen)
         future_price = furure_state[self.PRICE_KEY]
 
         current_price = raw_state[self.PRICE_KEY]
-        current_timestamp = int(raw_state[self.TIMESTAMP_KEY])
-
+        
         current_bid = float(raw_state[self.BIDS_KEY][0][0])
         future_bid = float(furure_state[self.BIDS_KEY][0][0])
 

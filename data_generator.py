@@ -25,9 +25,12 @@ class DataGenerator:
     
     def get_json_from_timestamp(self, timestamp):
         file_path = "{}{}.json".format(self.base_dir, timestamp)
-        if os.path.exists(file_path) :
-            return self.read_json_from_file(file_path)
-        return False
+        #print(file_path)
+        if os.path.exists(file_path):
+            states = self.read_json_from_file(file_path)
+            return states
+        #else:
+        #    print("File not found {}".format(file_path))
         
     def next(self, index = -1):
         #print("next %s %s %s" % (self.index, self.steps, self.has_next()))

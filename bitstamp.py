@@ -6,6 +6,12 @@ import state_util
 from numpy import array
 from tqdm import tqdm
 
+import datetime
+
+def get_now_plus_min(min = 2):
+    format = "%a %b %d %H:%M:%S %Y"
+    today = datetime.datetime.today() + datetime.timedelta(minutes=min)
+    return today.strftime(format)
 
 class LiveBitstamp:
     def __init__(self, list_limit, on_list_full = lambda : print("list full")):
@@ -21,6 +27,7 @@ class LiveBitstamp:
     def save_trade(self, data):
         self.trade = data
 
+    #Process the raw state
     def process(self, data):
         current_count = len(self.raw_states_list)
         timestamp = data['timestamp']
@@ -31,12 +38,13 @@ class LiveBitstamp:
                   self.pbar = tqdm(total=self.list_limit)
                 self.pbar.update(1)
                 if (current_count == self.list_limit-1):
+                  print("Starting prediction verification at {}".format(get_now_plus_min()))
                   self.pbar.close()
             
         self.last_timestamp = timestamp
         if (len(self.raw_states_list) > self.list_limit):
             self.raw_states_list.pop(0)
-            self.on_list_full(self)
+            self.on_list_full(self.raw_states_list)
             
     
     def trade_callback(self,data):
@@ -63,12 +71,6 @@ class LiveBitstamp:
         self.thread.daemon = True
         self.thread.start()
         
-    def get_processed_data(self):
-        processed_data = []
-        for raw_state in self.raw_states_list:
-          state = state_util.get_parse_state(raw_state, self.last_price, self.last_time)
-          processed_data.append(state)
-        return np.array(processed_data)
 
 class Bitstamp:
     def __init__(self, liveStates):
