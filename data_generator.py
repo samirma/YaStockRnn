@@ -14,6 +14,12 @@ class DataGenerator:
         self.is_random = random
         self.index = first_index
 
+    def convert_to_array(self, data):
+        if (isinstance(data, dict)):
+            return [data]
+        else:
+            return data
+    
     def read_json_from_file(self, file_path):
         f = io.open(file_path, mode="r", encoding="utf-8")
         raw = f.read()
@@ -28,7 +34,7 @@ class DataGenerator:
         #print(file_path)
         if os.path.exists(file_path):
             states = self.read_json_from_file(file_path)
-            return states
+            return self.convert_to_array(states)
         #else:
         #    print("File not found {}".format(file_path))
         
@@ -38,7 +44,7 @@ class DataGenerator:
             index = self.index
         jsonResult = self.get_from_index(index)
         self.index += 1
-        return jsonResult
+        return self.convert_to_array(jsonResult)
     
     def rewind(self):
         if self.is_random:
