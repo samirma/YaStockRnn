@@ -2,7 +2,7 @@ from datetime import datetime
 
 class StateUtil():
     
-    def __init__(self):
+    def __init__(self, future=60): # 1 min in future
         self.should_buy = 0
         self.should_sell = 0
         self.TIMESTAMP_KEY = "timestamp"
@@ -10,6 +10,7 @@ class StateUtil():
         self.BIDS_KEY = "bids"
         self.PRICE_KEY = "price"
         self.AMOUNT_KEY = "amount"
+        self.future = future
     
     # integer encode input data
     def onehot_encoded (self, integer_encoded, char_to_int = 2):
@@ -46,7 +47,8 @@ class StateUtil():
         
         return list
 
-    def get_future_state(self,state_timestamp, data_gen, sec=120): # 2 min in future
+    def get_future_state(self,state_timestamp, data_gen): # 2 min in future
+        sec=self.future
         timestamp_limit = state_timestamp + sec
         #print("Current timestamp", state_timestamp, " ==== ", timestamp_limit)
         index = 0
@@ -60,6 +62,7 @@ class StateUtil():
                     #print("Current timestamp", state_timestamp, " ==== ", timestamp_found)
                     return state
             index += 1
+            print("Searching {}".format(timestamp_limit + index))
         return None
 
     

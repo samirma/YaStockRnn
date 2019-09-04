@@ -23,7 +23,11 @@ class DataGenerator:
     def read_json_from_file(self, file_path):
         f = io.open(file_path, mode="r", encoding="utf-8")
         raw = f.read()
-        return json.loads(raw)
+        try:
+            return json.loads(raw)
+        except Exception as e: 
+            print(len(raw))
+            print("Unexpected error:", e)
     
     def get_from_index(self, index):
         file_path = self.base_dir + self.files[index]

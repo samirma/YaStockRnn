@@ -1,16 +1,18 @@
 import datetime
 
+from state_util import StateUtil
 
 class LiveProcessor:
-  def __init__(self):
+  def __init__(self, stateUtil = StateUtil()):
     self.predictions = []
+    self.stateUtil = stateUtil
     
   def get_now(self):
     format = "%a %b %d %H:%M:%S %Y"
     today = datetime.datetime.today()
     return today.strftime(format)
     
-  def get_now_plus_min(self, min = 2):
+  def get_now_plus_min(self, min = 1):
     format = "%a %b %d %H:%M:%S %Y"
     today = datetime.datetime.today() + datetime.timedelta(minutes=min)
     return today.strftime(format)
@@ -33,17 +35,17 @@ class LiveProcessor:
         else:
           print("BUY_FAIL: Current bid {} bid_predicted: {} {}".format(current_bid, bid_predicted, result))
       
-      #if (not should_buy):
-      #  if (not is_current_bid_higher_than_predict):
-      #    print("SELL: Current bid {} bid_predicted: {} Current tp: {} Pred tp: {}".format(current_bid, bid_predicted, datetime.datetime.fromtimestamp(timestamp), datetime.datetime.fromtimestamp(pred_timestamp)))
-      #  else:
-      #    print("SELL: Current bid {} bid_predicted: {}".format(current_bid, bid_predicted))
+      if (not should_buy):
+        if (not is_current_bid_higher_than_predict):
+          print("SELL CORRECT: Current bid {} bid_predicted: {} Current tp: {} Pred tp: {}".format(current_bid, bid_predicted, datetime.datetime.fromtimestamp(timestamp), datetime.datetime.fromtimestamp(pred_timestamp)))
+        else:
+          print("SELL FAIL: Current bid {} bid_predicted: {}".format(current_bid, bid_predicted))
       
   
   def get_processed_data(self, raw_states_list):
     processed_data = []
     for raw_state in raw_states_list:
-      state = state_util.get_parse_state(raw_state, self.last_price, self.last_time)
+      state = self.stateUtil.get_parse_state(raw_state)
       processed_data.append(state)
     return np.array(processed_data)
   
