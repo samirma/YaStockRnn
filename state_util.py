@@ -30,7 +30,7 @@ class StateUtil():
         list = []
         price = raw_state[self.PRICE_KEY]
 
-        list.append(raw_state[self.AMOUNT_KEY])
+        #list.append(raw_state[self.AMOUNT_KEY])
 
         def prepare_orders(orders, price, multi):
             amount = float(orders[0][1])
@@ -38,7 +38,7 @@ class StateUtil():
                 list.append((float(order[0])/price) * multi)
                 list.append(float(order[1])/amount)
 
-        history_step = 5
+        history_step = 10
         bids = raw_state[self.BIDS_KEY][:history_step]
         asks = raw_state[self.ASKS_KEY][:history_step]
         prepare_orders(bids, price, 1)
@@ -68,7 +68,7 @@ class StateUtil():
 
     def get_state(self, raw_state, data_gen):
 
-        list = self.get_parse_state(raw_state)
+        x = self.get_parse_state(raw_state)
         
         current_timestamp = int(raw_state[self.TIMESTAMP_KEY])
 
@@ -103,4 +103,4 @@ class StateUtil():
 
         last_price = current_price
         last_time = current_timestamp
-        return [list, y]
+        return [x, y, raw_state, furure_state]
