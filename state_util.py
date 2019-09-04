@@ -62,7 +62,7 @@ class StateUtil():
                     #print("Current timestamp", state_timestamp, " ==== ", timestamp_found)
                     return state
             index += 1
-            print("Searching {}".format(timestamp_limit + index))
+            #print("Searching {}".format(timestamp_limit + index))
         return None
 
     
