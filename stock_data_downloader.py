@@ -12,8 +12,7 @@ from data_generator import DataGenerator
 
 from bitstamp import LiveBitstamp, Bitstamp
 
-
-# In[53]:
+import argparse
 
 
 import json
@@ -21,8 +20,10 @@ import io
 
 class RawStateDownloader(LiveBitstamp):
     
-    def __init__(self, file_path_format = "stock_data/{}.json"):
+    def __init__(self, output_dir = "stock_data"):
         self.trade = {}
+        file_path_format = output_dir + "/{}.json"
+        print(file_path_format)
         self.file_path_format = file_path_format
     
     def get_file_path(self, timestamp):
@@ -55,21 +56,17 @@ class RawStateDownloader(LiveBitstamp):
         return json.loads(raw)
 
 
-# In[ ]:
+import argparse
+parser = argparse.ArgumentParser()
 
+parser.add_argument('--o', dest="dir", action="store", default="stock_data")
+parser.add_argument('--c', dest="currency", action="store", default="btcusd")
 
+args = parser.parse_args()
 
-
-
-# In[54]:
-
-
-live = RawStateDownloader()
-bt = Bitstamp(live)
+live = RawStateDownloader(args.dir)
+bt = Bitstamp(live, currency = args.currency)
 bt.connect()
-
-
-# In[ ]:
 
 
 

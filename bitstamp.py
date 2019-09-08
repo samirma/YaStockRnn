@@ -4,7 +4,7 @@ from time import sleep
 from threading import Thread, Lock
 import state_util
 from numpy import array
-from tqdm import tqdm
+from tqdm import tqdm_notebook as tqdm
 
 import datetime
 
@@ -73,10 +73,10 @@ class LiveBitstamp:
         
 
 class Bitstamp:
-    def __init__(self, liveStates):
+    def __init__(self, liveStates, currency = "btcusd"):
         self.base_url = "wss://ws.bitstamp.net"
-        self.trade_ch = "live_trades_btcusd"
-        self.bookings_ch = "order_book_btcusd"
+        self.trade_ch = "live_trades_" + currency
+        self.bookings_ch = "order_book_" + currency
         self.liveStates = liveStates
 
     def connect(self):
@@ -94,6 +94,7 @@ class Bitstamp:
 
     def __on_open(self):
         print("Bitstamp Websocket Opened.")
+        print("Reading form {} and {}".format(self.trade_ch, self.bookings_ch))
         self.subscribe()
 
     def __on_close(self):
