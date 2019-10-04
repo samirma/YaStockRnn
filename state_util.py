@@ -37,7 +37,7 @@ class StateUtil():
             amount = float(orders[0][1])
             for order in orders:
                 list.append((float(order[0])/price) * multi)
-                list.append(float(order[1])/amount)
+                #list.append(float(order[1])/amount)
 
         history_step = 10
         bids = raw_state[self.BIDS_KEY][:history_step]
