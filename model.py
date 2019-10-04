@@ -32,7 +32,7 @@ def get_model(n_input, features):
 
 
     #x = Bidirectional(LSTM(features*20, return_sequences=True))(inputX)
-    x = LSTM(100)(x)
+    x = LSTM(100)(inputX)
 
     #lstm = LSTM(features*40)(inputX)
     #x = add_deep_layers(lstm)
