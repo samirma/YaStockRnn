@@ -32,8 +32,7 @@ def get_model(n_input, features):
 
 
     #x = Bidirectional(LSTM(features*20, return_sequences=True))(inputX)
-    x = Bidirectional(LSTM(25, return_sequences=True))(inputX)
-    x = Bidirectional(layers.LSTM(10))(x)
+    x = LSTM(100)(x)
 
     #lstm = LSTM(features*40)(inputX)
     #x = add_deep_layers(lstm)
@@ -43,7 +42,7 @@ def get_model(n_input, features):
 
     #x = layers.add([lstm, x])
     x = add_deep_layers(x)
-    #x = add_deep_layers(x)
+    x = add_deep_layers(x)
     #x = add_deep_layers(x)
     x = add_deep_layers(x)
     x = Dense(300)(x)
