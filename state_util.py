@@ -30,14 +30,13 @@ class StateUtil():
     def get_parse_state(self, raw_state):
         list = []
         price = raw_state[self.PRICE_KEY]
-
-        #list.append(raw_state[self.AMOUNT_KEY])
-
+        amount = raw_state[self.AMOUNT_KEY]
+        
         def prepare_orders(orders, price, multi):
-            amount = float(orders[0][1])
+            
             for order in orders:
                 list.append((float(order[0])/price) * multi)
-                #list.append(float(order[1])/amount)
+                list.append(float(order[1])/amount)
 
         history_step = 10
         bids = raw_state[self.BIDS_KEY][:history_step]
@@ -83,8 +82,6 @@ class StateUtil():
         current_bid = float(raw_state[self.BIDS_KEY][0][0])
         future_bid = float(furure_state[self.BIDS_KEY][0][0])
 
-        will_offer_less = (future_bid/current_bid) < 0.99998
-
         ask = float(raw_state[self.ASKS_KEY][0][0]) 
         predicted = self.get_bid_goal(ask)
         is_value_incresed = future_bid >= predicted
@@ -95,11 +92,11 @@ class StateUtil():
             #print(raw_state)
             #print(furure_state)
             #print("=====")
-            y = self.onehot_encoded(0)
+            y = 1#self.onehot_encoded(0)
         else:
             #print (current_price, " ==== ", (current_price + 0.2), " ===== ", furure_state)
             self.should_sell += 1
-            y = self.onehot_encoded(1)
+            y = 0#self.onehot_encoded(1)
 
         #print (y)
         #print (get_date(raw_state), " ==== ", get_date(furure_state))

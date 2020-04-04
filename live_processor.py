@@ -6,6 +6,11 @@ class LiveProcessor:
   def __init__(self, stateUtil = StateUtil()):
     self.predictions = []
     self.stateUtil = stateUtil
+    self.TIMESTAMP_KEY = "timestamp"
+    self.ASKS_KEY = "asks"
+    self.BIDS_KEY = "bids"
+    self.PRICE_KEY = "price"
+    self.AMOUNT_KEY = "amount"
     
   def get_now(self):
     format = "%a %b %d %H:%M:%S %Y"
@@ -49,21 +54,21 @@ class LiveProcessor:
       processed_data.append(state)
     return np.array(processed_data)
   
-  def live_predict(self, raw_states_list):
+  def live_predict(self, raw_states_list, get_model_pred):
 
     final_pred = get_model_pred(np.array([self.get_processed_data(raw_states_list)]))
 
     raw_state = raw_states_list[-1]
 
-    ask = float(raw_state["asks"][0][0])
+    ask = float(raw_state[self.ASKS_KEY][0][0])
 
     timestamp = int(raw_state['timestamp'])
     
-    future_timestamp = timestamp + 120
+    future_timestamp = timestamp + self.stateUtil.future
 
-    current_bid = float(raw_state["bids"][0][0])
+    current_bid = float(raw_state[self.BIDS_KEY][0][0])
 
-    bid_predicted = (ask * 1.0002)
+    bid_predicted = self.stateUtil.get_bid_goal(ask)
     if (final_pred == 0):
       print('Should by now for {} and sell later for {} at {}'.format(ask, bid_predicted, self.get_now_plus_min()))
       self.predictions.append([future_timestamp, bid_predicted, True, ask])
