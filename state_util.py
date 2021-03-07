@@ -2,7 +2,7 @@ from datetime import datetime
 
 class StateUtil():
     
-    def __init__(self, future=60): # 1 min in future
+    def __init__(self, future=60, on_state_parsed = lambda list, price, amount: list): # 1 min in future
         self.should_buy = 0
         self.should_sell = 0
         self.TIMESTAMP_KEY = "timestamp"
@@ -10,6 +10,7 @@ class StateUtil():
         self.BIDS_KEY = "bids"
         self.PRICE_KEY = "price"
         self.AMOUNT_KEY = "amount"
+        self.on_state_parsed = on_state_parsed
         self.future = future
     
     # integer encode input data
@@ -44,7 +45,7 @@ class StateUtil():
         prepare_orders(bids, price, 1)
         prepare_orders(asks, price, -1)
         
-        return list
+        return self.on_state_parsed(list, price, amount)
 
     def get_future_state(self,state_timestamp, data_gen): # 2 min in future
         sec=self.future

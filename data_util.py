@@ -4,13 +4,15 @@ import state_util
 import numpy as np
 from state_util import StateUtil
 
-def get_set(set_name, data_count, data_gen, path = "drive/My Drive/model/", use_cache=True):
+on_state_parsed = lambda list, price, amount: list
+
+def get_set(set_name, data_count, data_gen, path = "drive/My Drive/model/", use_cache=True, on_state_parsed = on_state_parsed):
     trainX = []
     trainY = []
     x_path = path + set_name + "X.npy"
     y_path = path + set_name + "Y.npy"
     
-    stateUtil = StateUtil()
+    stateUtil = StateUtil(on_state_parsed = on_state_parsed)
     
     if (use_cache and os.path.exists(x_path) and (os.path.exists(y_path))):
         print("Loading data from files {} {}".format(x_path, y_path))
@@ -30,9 +32,9 @@ def get_set(set_name, data_count, data_gen, path = "drive/My Drive/model/", use_
 
     return trainX, trainY
 
-def get_sets(data_gen, data_count, val_percentage = 0.03, path = "drive/My Drive/model/", use_cache=True):
-    trainX, trainY = get_set("train", int(data_count*(1-val_percentage)), data_gen,  path, use_cache)
-    valX, valY = get_set("val", int(data_count*val_percentage), data_gen,  path, use_cache)
+def get_sets(data_gen, data_count, val_percentage = 0.03, path = "drive/My Drive/model/", use_cache=True, on_state_parsed = on_state_parsed):
+    trainX, trainY = get_set("train", int(data_count*(1-val_percentage)), data_gen,  path, use_cache, on_state_parsed)
+    valX, valY = get_set("val", int(data_count*val_percentage), data_gen,  path, use_cache, on_state_parsed)
     print(trainX.shape)
     print(trainY.shape)
     print(valX.shape)
