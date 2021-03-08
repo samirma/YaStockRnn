@@ -7,27 +7,28 @@ from ta import add_all_ta_features, add_trend_ta, add_volume_ta, add_volatility_
 import matplotlib.pyplot as plt
 
 
-def ta_list(win):
-    tas = []
-    tas.append(lambda close, volume, current_close, current_volume: (wma_indicator(close)/current_close))
-    tas.append(lambda close, volume, current_close, current_volume: ulcer_index(close)/current_close)
-    tas.append(lambda close, volume, current_close, current_volume: bollinger_lband_indicator(close)/current_close)
-    tas.append(lambda close, volume, current_close, current_volume: bollinger_hband_indicator(close)/current_close)
-    tas.append(lambda close, volume, current_close, current_volume: bollinger_pband(close)/current_close)
-    tas.append(lambda close, volume, current_close, current_volume: bollinger_wband(close)/current_close)
-    tas.append(lambda close, volume, current_close, current_volume: bollinger_lband(close)/current_close)
-    tas.append(lambda close, volume, current_close, current_volume: (bollinger_mavg(close)/current_close))
-    tas.append(lambda close, volume, current_close, current_volume: (macd_diff(close)/current_close))
-    tas.append(lambda close, volume, current_close, current_volume: (macd_signal(close)/current_close))
-    tas.append(lambda close, volume, current_close, current_volume: (ema_indicator(close)/current_close))
-    tas.append(lambda close, volume, current_close, current_volume: (stc(close, window_slow=win)))
+def ta_list(win, fillna=True):
+    tas = []   
+    tas.append(lambda close, volume, current_close, current_volume: (kst_sig(close, fillna=fillna)))
+    tas.append(lambda close, volume, current_close, current_volume: (aroon_down(close, window=win, fillna=fillna)))
+    tas.append(lambda close, volume, current_close, current_volume: (aroon_up(close, window=win, fillna=fillna)))
+    tas.append(lambda close, volume, current_close, current_volume: (volume_price_trend(close, volume, fillna=fillna)))
+    tas.append(lambda close, volume, current_close, current_volume: (force_index(close, volume, window=win, fillna=fillna)))
+    tas.append(lambda close, volume, current_close, current_volume: (negative_volume_index(close, volume, fillna=fillna)))
     
-    tas.append(lambda close, volume, current_close, current_volume: (kst_sig(close)))
-    tas.append(lambda close, volume, current_close, current_volume: (aroon_down(close, window=win)))
-    tas.append(lambda close, volume, current_close, current_volume: (aroon_up(close, window=win)))
-    tas.append(lambda close, volume, current_close, current_volume: (volume_price_trend(close, volume)))
-    tas.append(lambda close, volume, current_close, current_volume: (force_index(close, volume, window=win)))
-    tas.append(lambda close, volume, current_close, current_volume: (negative_volume_index(close, volume)))
+    tas.append(lambda close, volume, current_close, current_volume: (wma_indicator(close, fillna=fillna)/current_close))
+    tas.append(lambda close, volume, current_close, current_volume: ulcer_index(close, fillna=fillna)/current_close)
+    tas.append(lambda close, volume, current_close, current_volume: bollinger_lband_indicator(close, fillna=fillna)/current_close)
+    tas.append(lambda close, volume, current_close, current_volume: bollinger_hband_indicator(close, fillna=fillna)/current_close)
+    tas.append(lambda close, volume, current_close, current_volume: bollinger_pband(close, fillna=fillna)/current_close)
+    tas.append(lambda close, volume, current_close, current_volume: bollinger_wband(close, fillna=fillna)/current_close)
+    tas.append(lambda close, volume, current_close, current_volume: bollinger_lband(close, fillna=fillna)/current_close)
+    tas.append(lambda close, volume, current_close, current_volume: (bollinger_mavg(close, fillna=fillna)/current_close))
+    tas.append(lambda close, volume, current_close, current_volume: (macd_diff(close, fillna=fillna)/current_close))
+    tas.append(lambda close, volume, current_close, current_volume: (macd_signal(close, fillna=fillna)/current_close))
+    tas.append(lambda close, volume, current_close, current_volume: (ema_indicator(close, fillna=fillna)/current_close))
+    tas.append(lambda close, volume, current_close, current_volume: (stc(close, window_slow=win, fillna=fillna)))
+
     return tas
 
 class TecAn:
