@@ -35,7 +35,7 @@ class TecAn:
         self.tas = ta_list(self.windows)
         self.data = []
         self.windows_limit = windows_limit
-
+    
     #Process the raw state
     def add_ta(self, list, price, amount):
         self.data.append([price, amount])

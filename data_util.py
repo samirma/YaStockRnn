@@ -1,4 +1,4 @@
-from tqdm import tqdm
+from tqdm import tqdm_notebook as tqdm
 import os
 import state_util
 import numpy as np
@@ -12,7 +12,7 @@ def get_set(set_name, data_count, data_gen, path = "drive/My Drive/model/", use_
     x_path = path + set_name + "X.npy"
     y_path = path + set_name + "Y.npy"
     
-    stateUtil = StateUtil(on_state_parsed = on_state_parsed)
+    stateUtil = StateUtil(data_gen = data_gen, on_state_parsed = on_state_parsed)
     
     if (use_cache and os.path.exists(x_path) and (os.path.exists(y_path))):
         print("Loading data from files {} {}".format(x_path, y_path))
@@ -21,10 +21,13 @@ def get_set(set_name, data_count, data_gen, path = "drive/My Drive/model/", use_
     else:
         for i in tqdm(range(data_count)):
             states = data_gen.next()
+            #dic = {}
             for state in states:
-                state = stateUtil.get_state(state, data_gen)
+                state = stateUtil.get_state(state)
                 trainX.append(state[0])
                 trainY.append(state[1])
+                #raw = state[2]
+                #dic[raw['microtimestamp'] = [raw[stateUtil.PRICE_KEY],raw[stateUtil.AMOUNT_KEY]]
     trainX = np.array(trainX)
     trainY = np.array(trainY)
     np.save(x_path, trainX)

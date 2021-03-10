@@ -41,14 +41,21 @@ class DataGenerator:
             return self.convert_to_array(states)
         #else:
         #    print("File not found {}".format(file_path))
-        
+    
+    def get_current_state_from_index(self, index):
+        jsonResult = self.get_from_index(self.index)
+        return self.convert_to_array(jsonResult)
+
+    def get_current_state(self):
+        return self.get_current_state_from_index(self.index)
+
     def next(self, index = -1):
         #print("next %s %s %s" % (self.index, self.steps, self.has_next()))
         if index == -1:
             index = self.index
-        jsonResult = self.get_from_index(index)
+        state = self.get_current_state()
         self.index += 1
-        return self.convert_to_array(jsonResult)
+        return state
     
     def rewind(self):
         if self.is_random:
