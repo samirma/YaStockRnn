@@ -6,12 +6,13 @@ class StateUtil():
         self.should_buy = 0
         self.should_sell = 0
         self.TIMESTAMP_KEY = "timestamp"
+        self.MICROTIMESTAMP_KEY = "microtimestamp"
         self.ASKS_KEY = "asks"
         self.BIDS_KEY = "bids"
         self.PRICE_KEY = "price"
         self.AMOUNT_KEY = "amount"
         self.on_state_parsed = on_state_parsed
-        self.future = future
+        self.future = future * 1000000
         self.data_gen = data_gen
         self.book_size = 5
     
@@ -49,20 +50,18 @@ class StateUtil():
         
         return self.on_state_parsed(list, price, amount, self.data_gen.index)
 
-    def get_future_state(self,state_timestamp): # 2 min in future
+    def get_future_state(self, current_timestamp, current_index):
         sec=self.future
-        timestamp_limit = state_timestamp + sec
-        #print("Current timestamp", state_timestamp, " ==== ", timestamp_limit)
-        index = 0
+        timestamp_limit = current_timestamp + sec
         timestamp = 0
-        while timestamp < timestamp_limit:
-            states = self.data_gen.get_json_from_timestamp(timestamp_limit + index)
-            if (states):
-                state = states[-1]
-                if (state):
-                    timestamp_found = int(state[self.TIMESTAMP_KEY])
-                    #print("Current timestamp", state_timestamp, " ==== ", timestamp_found)
-                    return state
+        #print("Current timestamp", state_timestamp, " ==== ", timestamp_limit)
+        index = 1
+        while True:
+            state = self.data_gen.get_from_index(current_index + index)
+            timestamp = int(state[self.MICROTIMESTAMP_KEY])
+            #print("Current timestamp", timestamp, " ==== ", timestamp_limit)
+            if (timestamp >= timestamp_limit):
+                return state
             index += 1
             #print("Searching {}".format(timestamp_limit + index))
         return None
@@ -71,13 +70,13 @@ class StateUtil():
     def get_bid_goal(self, ask):
         return (ask * 1.0001)
 
-    def get_state(self, raw_state):
+    def get_state(self, raw_state, index):
 
         x = self.get_parse_state(raw_state)
         
-        current_timestamp = int(raw_state[self.TIMESTAMP_KEY])
+        current_timestamp = int(raw_state[self.MICROTIMESTAMP_KEY])
 
-        furure_state = self.get_future_state(current_timestamp)
+        furure_state = self.get_future_state(current_timestamp, index)
         future_price = furure_state[self.PRICE_KEY]
 
         current_price = raw_state[self.PRICE_KEY]
@@ -87,7 +86,8 @@ class StateUtil():
 
         ask = float(raw_state[self.ASKS_KEY][0][0]) 
         predicted = self.get_bid_goal(ask)
-        is_value_incresed = future_bid >= predicted
+        target_rate = ((future_bid/ask) - 1)
+        is_value_incresed = (target_rate > 0)
 
         if is_value_incresed:
             self.should_buy += 1
@@ -95,13 +95,13 @@ class StateUtil():
             #print(raw_state)
             #print(furure_state)
             #print("=====")
-            #y = 1#self.onehot_encoded(0)
+            y = 1#self.onehot_encoded(1)
         else:
             #print (current_price, " ==== ", (current_price + 0.2), " ===== ", furure_state)
             self.should_sell += 1
-            #y = 0#self.onehot_encoded(1)
+            y = 0#self.onehot_encoded(0)
 
-        y = (future_bid/ask) - 1
+        #y = target_rate
         #print (y)
         #print (get_date(raw_state), " ==== ", get_date(furure_state))
 

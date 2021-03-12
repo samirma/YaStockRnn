@@ -37,17 +37,13 @@ class DataGenerator:
         file_path = "{}{}.json".format(self.base_dir, timestamp)
         #print(file_path)
         if os.path.exists(file_path):
-            states = self.read_json_from_file(file_path)
-            return self.convert_to_array(states)
-        #else:
-        #    print("File not found {}".format(file_path))
-    
-    def get_current_state_from_index(self, index):
-        jsonResult = self.get_from_index(self.index)
-        return self.convert_to_array(jsonResult)
+            state = self.read_json_from_file(file_path)
+            return state
+        else:
+            print("File not found {}".format(file_path))
 
     def get_current_state(self):
-        return self.get_current_state_from_index(self.index)
+        return self.get_from_index(self.index)
 
     def next(self, index = -1):
         #print("next %s %s %s" % (self.index, self.steps, self.has_next()))

@@ -20,14 +20,10 @@ def get_set(set_name, data_count, data_gen, path = "drive/My Drive/model/", use_
         trainY = np.load(y_path)
     else:
         for i in tqdm(range(data_count)):
-            states = data_gen.next()
-            #dic = {}
-            for state in states:
-                state = stateUtil.get_state(state)
-                trainX.append(state[0])
-                trainY.append(state[1])
-                #raw = state[2]
-                #dic[raw['microtimestamp'] = [raw[stateUtil.PRICE_KEY],raw[stateUtil.AMOUNT_KEY]]
+            raw = data_gen.next()
+            state = stateUtil.get_state(raw, data_gen.index)
+            trainX.append(state[0])
+            trainY.append(state[1])
     trainX = np.array(trainX)
     trainY = np.array(trainY)
     np.save(x_path, trainX)
@@ -38,10 +34,7 @@ def get_set(set_name, data_count, data_gen, path = "drive/My Drive/model/", use_
 def get_sets(data_gen, data_count, val_percentage = 0.03, path = "drive/My Drive/model/", use_cache=True, on_state_parsed = on_state_parsed):
     trainX, trainY = get_set("train", int(data_count*(1-val_percentage)), data_gen,  path, use_cache, on_state_parsed)
     valX, valY = get_set("val", int(data_count*val_percentage), data_gen,  path, use_cache, on_state_parsed)
-    print(trainX.shape)
-    print(trainY.shape)
-    print(valX.shape)
-    print(valY.shape)
+    print("Completed: {} {} {} {}".format(trainX.shape, trainY.shape, valX.shape, valY.shape))
     return trainX, trainY, valX, valY
 
 
