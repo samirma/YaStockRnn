@@ -47,6 +47,7 @@ class RawStateDownloader(LiveBitstamp):
         timestamp = data['microtimestamp']
         #current = self.get_current_state(timestamp)
         #current.append(data)
+        print(timestamp)
         self.save_file(self.get_file_path(timestamp), data)
         
     def load_file(self, filename):

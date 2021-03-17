@@ -15,6 +15,7 @@ class StateUtil():
         self.future = future * 1000000
         self.data_gen = data_gen
         self.book_size = 5
+        self.last_price = 0
     
     # integer encode input data
     def onehot_encoded (self, integer_encoded, char_to_int = 2):
@@ -47,6 +48,8 @@ class StateUtil():
         asks = raw_state[self.ASKS_KEY][:history_step]
         prepare_orders(bids, price, 1)
         prepare_orders(asks, price, -1)
+        
+        list.append(((self.last_price/price)-1))
         
         return self.on_state_parsed(list, price, amount, self.data_gen.index)
 
@@ -105,6 +108,6 @@ class StateUtil():
         #print (y)
         #print (get_date(raw_state), " ==== ", get_date(furure_state))
 
-        last_price = current_price
-        last_time = current_timestamp
+        self.last_price = current_price
+        self.last_time = current_timestamp
         return [x, y, raw_state, furure_state]

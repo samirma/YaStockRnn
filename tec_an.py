@@ -9,10 +9,10 @@ import matplotlib.pyplot as plt
 
 def ta_list(win, fillna=True):
     tas = []   
-    tas.append(lambda close, volume, current_close, current_volume: (kst_sig(close, fillna=fillna)))
+    #tas.append(lambda close, volume, current_close, current_volume: (kst_sig(close, fillna=fillna)))
     tas.append(lambda close, volume, current_close, current_volume: (aroon_down(close, window=win, fillna=fillna)))
     tas.append(lambda close, volume, current_close, current_volume: (aroon_up(close, window=win, fillna=fillna)))
-    tas.append(lambda close, volume, current_close, current_volume: (volume_price_trend(close, volume, fillna=fillna)))
+    #tas.append(lambda close, volume, current_close, current_volume: (volume_price_trend(close, volume, fillna=fillna)))
     tas.append(lambda close, volume, current_close, current_volume: (force_index(close, volume, window=win, fillna=fillna)))
     #tas.append(lambda close, volume, current_close, current_volume: (negative_volume_index(close, volume, fillna=fillna)))
     tas.append(lambda close, volume, current_close, current_volume: ulcer_index(close, fillna=fillna))
@@ -30,24 +30,26 @@ def ta_list(win, fillna=True):
 
 class TecAn:
     
-    def __init__(self, windows = 100, windows_limit = 200):
+    def __init__(self, windows = 50, windows_limit = 50):
         self.windows = windows
         self.tas = ta_list(self.windows)
         self.data = []
         self.windows_limit = windows_limit
     
     #Process the raw state
-    def add_ta(self, list, price, amount):
+    def add_ta(self, price, amount):
+        list = []
         self.data.append([price, amount])
         if (len(self.data) > self.windows_limit):
             self.data.pop(0)
         df = pd.DataFrame(self.data, columns = ['Close', 'Volume'])
         close = df['Close']
         volume = df['Volume']
-        import math
+        #print("Received: {} {}".format(price, amount))
         for ta in self.tas:
             value = ta(close, volume, price, amount).iloc[-1]
             #value = log(value)
             list.append(value)
+        #print(list)
         return list
         
