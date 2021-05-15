@@ -80,6 +80,8 @@ class Bitstamp:
         self.liveStates = liveStates
 
     def connect(self):
+        websocket.enableTrace(True)
+
         self.ws = websocket.WebSocketApp(self.base_url,
                                          on_message=self.__on_message,
                                          on_close=self.__on_close,
@@ -89,20 +91,20 @@ class Bitstamp:
         self.ws.run_forever()
 
 
-    def __on_error(self, error):
+    def __on_error(self, ws, error):
         print(str(error))
 
-    def __on_open(self):
+    def __on_open(self, ws):
         print("Bitstamp Websocket Opened.")
         print("Reading form {} and {}".format(self.trade_ch, self.bookings_ch))
         self.subscribe()
 
-    def __on_close(self):
+    def __on_close(self, ws):
         print("Bitstamp Websocket Closed.")
         if not self.exited:
             self.reconnect()
 
-    def __on_message(self, message):
+    def __on_message(self, ws, message):
         try:
             raw_json = json.loads(message)
             channel = raw_json["channel"]

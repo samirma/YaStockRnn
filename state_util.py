@@ -14,7 +14,7 @@ class StateUtil():
         self.on_state_parsed = on_state_parsed
         self.future = future * 1000000
         self.data_gen = data_gen
-        self.book_size = 5
+        self.book_size = 10
         self.last_price = 0
     
     # integer encode input data
@@ -37,17 +37,16 @@ class StateUtil():
         price = raw_state[self.PRICE_KEY]
         amount = raw_state[self.AMOUNT_KEY]
         
-        def prepare_orders(orders, price, multi):
-            
+        def prepare_orders(orders, price):
             for order in orders:
-                list.append((float(order[0])/price) * multi)
-                list.append(float(order[1])/amount)
+                list.append((float(order[0])/price) - 1)
+                #list.append((float(order[1])/amount) - 1)
 
         history_step = self.book_size
         bids = raw_state[self.BIDS_KEY][:history_step]
         asks = raw_state[self.ASKS_KEY][:history_step]
-        prepare_orders(bids, price, 1)
-        prepare_orders(asks, price, -1)
+        prepare_orders(bids, price)
+        prepare_orders(asks, price)
         
         list.append(((self.last_price/price)-1))
         
@@ -65,7 +64,7 @@ class StateUtil():
             #print("Current timestamp", timestamp, " ==== ", timestamp_limit)
             if (timestamp >= timestamp_limit):
                 return state
-            index += 1
+            index += 100
             #print("Searching {}".format(timestamp_limit + index))
         return None
 
@@ -98,11 +97,11 @@ class StateUtil():
             #print(raw_state)
             #print(furure_state)
             #print("=====")
-            y = 1#self.onehot_encoded(1)
+            y = self.onehot_encoded(1)
         else:
             #print (current_price, " ==== ", (current_price + 0.2), " ===== ", furure_state)
             self.should_sell += 1
-            y = 0#self.onehot_encoded(0)
+            y = self.onehot_encoded(0)
 
         #y = target_rate
         #print (y)

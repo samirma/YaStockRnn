@@ -41,8 +41,8 @@ def get_sets(data_gen, data_count, val_percentage = 0.03, path = "drive/My Drive
 
 
 def load_raw_data(name, sufix, path):
-    X = np.load(path + name + sufix + "X.npy")
-    Y = np.load(path + name + sufix + "Y.npy")
+    X = np.load(path + name + sufix + "X.npy", allow_pickle=True)
+    Y = np.load(path + name + sufix + "Y.npy", allow_pickle=True)
     return X, Y
 
 def get_balanced_set(X, Y):
@@ -54,7 +54,7 @@ def get_balanced_set(X, Y):
     for i in range(1, len(X)-1):
         x = X[i]
         y = Y[i]
-        if (y == 1):
+        if (y[1] == 1):
             positiveX.append(x)
             positiveY.append(y)
         else:
@@ -94,7 +94,8 @@ def load_data(name, sufix, path, balanced):
 
 
 def prepare_y(list):
-    list = np.insert(list, 0, 0)
+    empty = np.array([[0, 0]])
+    list = np.concatenate((empty, list), axis=0)
     list = np.delete(list , -1, 0)
     return list
 

@@ -1,9 +1,4 @@
 #!/usr/bin/env python
-# coding: utf-8
-
-# In[47]:
-
-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os
@@ -60,7 +55,7 @@ class RawStateDownloader(LiveBitstamp):
 import argparse
 parser = argparse.ArgumentParser()
 
-parser.add_argument('--o', dest="dir", action="store", default="stock_data")
+parser.add_argument('--o', dest="dir", action="store")
 parser.add_argument('--c', dest="currency", action="store", default="btcusd")
 
 args = parser.parse_args()
