@@ -2,7 +2,7 @@ from datetime import datetime
 
 class StateUtil():
     
-    def __init__(self, data_gen, future=5, on_state_parsed = lambda list, price, amount, index: list): # 1 min in future
+    def __init__(self, data_gen, future=10, on_state_parsed = lambda list, price, amount, index: list): # 1 min in future
         self.should_buy = 0
         self.should_sell = 0
         self.TIMESTAMP_KEY = "timestamp"
@@ -15,7 +15,10 @@ class StateUtil():
         self.future = future * 1000000
         self.data_gen = data_gen
         self.book_size = 10
-        self.last_price = 0
+        self.last_price = -1
+        self.last_amount = -1
+        self.ignore_duplicate = True
+        self.last_state = []
     
     # integer encode input data
     def onehot_encoded (self, integer_encoded, char_to_int = 2):
@@ -30,7 +33,6 @@ class StateUtil():
     def get_date(self, state):
         timestamp = int(state[self.TIMESTAMP_KEY])
         return datetime.fromtimestamp(timestamp)
-
 
     def get_parse_state(self, raw_state):
         list = []
@@ -47,9 +49,9 @@ class StateUtil():
         asks = raw_state[self.ASKS_KEY][:history_step]
         prepare_orders(bids, price)
         prepare_orders(asks, price)
-        
-        list.append(((self.last_price/price)-1))
-        
+        if (self.ignore_duplicate and self.last_price == price and self.last_amount == amount):
+            raise Exception("Duplicate state")
+        self.last_state = list
         return self.on_state_parsed(list, price, amount, self.data_gen.index)
 
     def get_future_state(self, current_timestamp, current_index):
@@ -64,7 +66,7 @@ class StateUtil():
             #print("Current timestamp", timestamp, " ==== ", timestamp_limit)
             if (timestamp >= timestamp_limit):
                 return state
-            index += 100
+            index += 1
             #print("Searching {}".format(timestamp_limit + index))
         return None
 
@@ -76,12 +78,16 @@ class StateUtil():
 
         x = self.get_parse_state(raw_state)
         
+        current_price = raw_state[self.PRICE_KEY]
         current_timestamp = int(raw_state[self.MICROTIMESTAMP_KEY])
+        
+        self.last_price = current_price
+        self.last_amount = raw_state[self.AMOUNT_KEY]
+        self.last_time = current_timestamp
+        
 
         furure_state = self.get_future_state(current_timestamp, index)
         future_price = furure_state[self.PRICE_KEY]
-
-        current_price = raw_state[self.PRICE_KEY]
         
         current_bid = float(raw_state[self.BIDS_KEY][0][0])
         future_bid = float(furure_state[self.BIDS_KEY][0][0])
@@ -97,16 +103,17 @@ class StateUtil():
             #print(raw_state)
             #print(furure_state)
             #print("=====")
-            y = self.onehot_encoded(1)
+            y = 1 #self.onehot_encoded(1)
         else:
             #print (current_price, " ==== ", (current_price + 0.2), " ===== ", furure_state)
             self.should_sell += 1
-            y = self.onehot_encoded(0)
+            y = 0 #self.onehot_encoded(0)
 
         #y = target_rate
         #print (y)
-        #print (get_date(raw_state), " ==== ", get_date(furure_state))
+        current_tmp = int(raw_state[self.TIMESTAMP_KEY])
+        future_tmp = int(furure_state[self.TIMESTAMP_KEY])
+        
+        #print ("{} {} {}".format(datetime.fromtimestamp(current_tmp), datetime.fromtimestamp(future_tmp), (future_tmp - current_tmp) ))
 
-        self.last_price = current_price
-        self.last_time = current_timestamp
         return [x, y, raw_state, furure_state]
