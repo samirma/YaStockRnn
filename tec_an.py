@@ -92,6 +92,7 @@ class TecAn:
         self.data.append([price, amount])
         if (len(self.data) > self.windows_limit):
             self.data.pop(0)
+        
         df = pd.DataFrame(self.data, columns = ['Close', 'Volume'])
         close = df['Close']
         volume = df['Volume']

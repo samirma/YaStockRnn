@@ -41,23 +41,27 @@ CLOSE = 'close'
 
 class DataAgent():
     
-    def __init__(self, 
+    def __init__(self,
+                 resample = '2Min',
                  taProc = TacProcess(), 
                  tec = TecAn(windows = 20, windows_limit = 100),
                  on_new_data = lambda x: print("{}".format(x)),
-                 on_new_order = lambda buy, sell: print("new order")
+                 on_new_order = lambda buy, sell: print("new order"),
+                 on_closed_price = lambda price: price
                  ):
         self.taProc = taProc
         self.tec = tec
         self.final_x = []
         self.list = []
-        self.resample = '2Min'
+        self.resample = resample
         self.raw_limit = 10000
         self.last_price = -1 
         self.last_amount = -1
         self.last_ohlc_count = 1
         self.on_new_data = on_new_data
         self.on_new_order = on_new_order
+        self.on_closed_price = on_closed_price
+        self.on_new_data_count = 0
         
     def on_new_data(self, x):
         self.on_new_data(x)
@@ -75,20 +79,22 @@ class DataAgent():
         
         timestamp = raw[TIMESTAMP_KEY]
         timestamp = pd.to_datetime(timestamp, unit='s')
-        self.list.append([timestamp, price, amount])
+        self.list.append([timestamp, price])
         
         if (len(self.list) > self.raw_limit):
             self.list.pop(0)
         
         DATE = 'Date'
-        df = pd.DataFrame(self.list, columns = [DATE, CLOSE, 'Volume'])
+        df = pd.DataFrame(self.list, columns = [DATE, CLOSE])
         df = df.set_index(pd.DatetimeIndex(df[DATE]))
-
+                
         time = df[CLOSE].resample(self.resample)
         ohlc = time.ohlc()
         
+        #print("{} {}".format(timestamp, len(ohlc)))
+        
         ohlc_count = len(ohlc)
-        if (ohlc_count == self.last_ohlc_count):
+        if (ohlc_count < 2):
             return
         
         self.last_ohlc_count = ohlc_count
@@ -97,9 +103,13 @@ class DataAgent():
         del ohlc['high']
         del ohlc['low']
         
-        price = ohlc.iloc[-2][CLOSE] 
+        #price = ohlc.iloc[-2][CLOSE]
         
+        self.on_closed_price(price)
+        
+        self.on_new_data_count = self.on_new_data_count + 1
+
         x = self.taProc.add_tacs_realtime([], price, 0.0, self.tec)
         self.on_new_data(x)
         
-        self.ohlc = ohlc.iloc[:-2]
+        self.ohlc = ohlc.iloc[:-1]
