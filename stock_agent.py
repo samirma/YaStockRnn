@@ -58,9 +58,7 @@ class BackTest():
     def report(self):
         print(self.initial_value)
         print(self.current)
-        print((self.current/self.initial_value)*100)
-
-
+        print(f'{((self.current*100)/self.initial_value) - 100}%)
 
 class StockAgent():
     

@@ -104,13 +104,13 @@ class DataAgent():
         
         #print("{} - {}".format(self.last_ohlc_count, ohlc_count))
         
-        del ohlc['open']
+        #del ohlc['open']
         del ohlc['high']
         del ohlc['low']
         
-        price = ohlc.iloc[-2][CLOSE]
+        #price_closed = ohlc.iloc[-2][CLOSE]
         #print("######")
-        #print(f'{price current_price}')
+        #print(f'{price} open: {ohlc.iloc[-1]["open"]} price_closed: {price_closed}')
         #print(ohlc)
         
         self.on_closed_price(price)
