@@ -48,7 +48,10 @@ class BackTest():
         self.holding = 0
         self.bought = False
         if (self.verbose):
-            print(f'{self.timestamp} Sell ({self.price}) {(sell - self.buy_price)} total: {self.current}')
+            profit = (sell - self.buy_price)
+            if (profit < 0):
+                print(f'#### LOSSSS: {profit}')
+            print(f'{self.timestamp} Sell ({self.price}) {profit} total: {self.current}')
 
     def on_state(self, timestamp, price):
         self.timestamp = pd.to_datetime(timestamp, unit='s')
@@ -58,7 +61,7 @@ class BackTest():
     def report(self):
         print(self.initial_value)
         print(self.current)
-        print(f'{((self.current*100)/self.initial_value) - 100}%)
+        print(f'{((self.current*100)/self.initial_value) - 100}%')
 
 class StockAgent():
     
