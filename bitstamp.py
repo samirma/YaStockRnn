@@ -80,7 +80,7 @@ class Bitstamp:
         self.liveStates = liveStates
 
     def connect(self):
-        websocket.enableTrace(True)
+        #websocket.enableTrace(True)
 
         self.ws = websocket.WebSocketApp(self.base_url,
                                          on_message=self.__on_message,

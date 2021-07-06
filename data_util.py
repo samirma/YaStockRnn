@@ -101,7 +101,7 @@ def get_balanced_set_seq(x, y):
     return resampled_features, resampled_labels
 
 
-def load_data(name, sufix, path):
+def load_data(name, sufix, path = "data/"):
     x, y = load_raw_data(name, sufix, path)
 
     return x, y

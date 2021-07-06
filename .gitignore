@@ -115,4 +115,5 @@ btcusd17.tgz
 btcusdAug19.tgz
 data/
 logs/
+model/
 requirements.txt
