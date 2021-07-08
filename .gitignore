@@ -117,3 +117,6 @@ data/
 logs/
 model/
 requirements.txt
+
+
+catboost_info/

@@ -1,4 +1,4 @@
-from tqdm import tqdm_notebook as tqdm
+from tqdm.notebook import tqdm
 import os
 import state_util
 import numpy as np
