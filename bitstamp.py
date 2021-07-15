@@ -4,9 +4,14 @@ from time import sleep
 from threading import Thread, Lock
 import state_util
 from numpy import array
-from tqdm import tqdm_notebook as tqdm
-
+from tqdm.notebook import tqdm
+import requests
+import json
+import pandas as pd
 import datetime
+import numpy as np
+import datetime
+
 
 def get_now_plus_min(min = 2):
     format = "%a %b %d %H:%M:%S %Y"
@@ -159,3 +164,50 @@ class Bitstamp:
             }
         }
         self.ws.send(json.dumps(payload))
+        
+        
+
+def load_bitstamp_ohlc(currency_pair, start=-1, end=-1, step=60, limit=5):
+    # params:
+    #   currency_pair: currency pair on which to trigger the request
+    #   start: unix timestamp from when OHLC data will be started
+    #   end: unix timestamp to when OHLC data will be shown
+    #   step: timeframe in seconds; possible options are:
+    #         60, 180, 300, 900, 1800, 3600, 7200, 14400, 21600, 43200, 86400, 259200
+    #   limit: limit ohlc results (minimum: 1; maximum: 1000)
+    #
+    # returns:
+    #   pair: trading pair on which the request was made
+    #   high: price high
+    #   timestamp: unix timestamp date and time
+    #   volume: volume
+    #   low: price low
+    #   close: closing price
+    #   open: opening price
+
+    if step not in [60, 180, 300, 900, 1800, 3600, 7200, 14400, 21600, 43200, 86400, 259200]:
+        raise Exception('Invalid step: {}'.format(step))
+
+    if not (1 <= limit and limit <= 1000):
+        raise Exception('Invalid limit: {}'.format(limit))
+
+    route = 'https://www.bitstamp.net/api/v2/ohlc/{}/'.format(currency_pair)
+
+    payload = {
+        'currency_pair': currency_pair,
+        'step': step,
+        'limit': limit,
+    }
+    if (start > 0):
+        payload['start'] = start
+
+    if (end > 0):
+        payload['end'] = end
+
+    print(f"{route} -> {payload}")
+    response = requests.get(route, params=payload)
+    ohlc = response.json()
+    
+    
+    return ohlc["data"]["ohlc"]
+

@@ -95,10 +95,11 @@ class BackTest():
  
     def sell(self, sell):
         self.current = self.current + (sell * self.holding)
+        profit = (sell - self.buy_price) * self.holding
+        profit = round(profit, 4)
+        positive = (profit > 0)
         if (self.verbose):
-            profit = (sell - self.buy_price) * self.holding
-            profit = round(profit, 4)
-            if (profit < 0):
+            if (not positive):
                 print(f'#### LOSSSS: {profit}')
             print(f'{self.timestamp} Sell ({self.price}) profit: {profit} total: {self.current}')
         self.holding = 0
@@ -119,6 +120,7 @@ class StockAgent():
         self.best_sell = 0
         self.best_buy = 0
         self.timestamp = 0
+        self.price = 0
         
     def on_x(self, x):
         y = self.model.predict(np.array([x]))

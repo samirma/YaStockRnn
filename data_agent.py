@@ -42,7 +42,7 @@ CLOSE = 'close'
 class DataAgent():
     
     def __init__(self,
-                 resample = '2Min',
+                 resample,
                  taProc = TacProcess(), 
                  tec = TecAn(windows = 20, windows_limit = 100),
                  on_new_data = lambda x: print("{}".format(x)),
@@ -66,6 +66,7 @@ class DataAgent():
         
     def on_new_data(self, x):
         self.on_new_data(x)
+        
         
     def on_new_raw_data(self, raw):
         price = raw[PRICE_KEY]
@@ -113,11 +114,17 @@ class DataAgent():
         #print(f'{price} open: {ohlc.iloc[-1]["open"]} price_closed: {price_closed}')
         #print(ohlc)
         
+        self.on_new_data_count = self.on_new_data_count + 1
+        
+        self.on_new_price(price)
+        
+        self.ohlc = ohlc
+        
+
+    def on_new_price(self, price):
         self.on_closed_price(price)
         
-        self.on_new_data_count = self.on_new_data_count + 1
-
         x = self.taProc.add_tacs_realtime([], price, 0.0, self.tec)
         self.on_new_data(x)
         
-        self.ohlc = ohlc
+        
