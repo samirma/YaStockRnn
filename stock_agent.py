@@ -1,9 +1,5 @@
 import pandas as pd
-import data_util
-from tqdm import tqdm_notebook as tqdm
-from data_generator import DataGenerator
-from tec_an import TecAn
-from data_agent import DataAgent, TacProcess
+import datetime as dt
 import numpy as np
 from data_util import *
 from sklearn_model_hyper import *
@@ -55,8 +51,6 @@ class BackTest():
         is_not_pending = (not is_pending)
         
         profit_before_pending = ((is_pending and (not has_loss)) and self.sell_on_profit)
-
-        pending_finished_should_sell = (is_not_pending and self.is_bought())
         
         is_valid = (self.is_bought() and (is_not_pending or profit_before_pending))
         
@@ -111,7 +105,9 @@ class StockAgent():
     def __init__(self, model = [],
                 request_sell = lambda price: price,
                 request_buy = lambda price: price,
-                on_state = lambda timestamp, price: timestamp
+                on_state = lambda timestamp, price: timestamp,
+                verbose = False,
+                simulate_on_price = True,
                 ):
         self.model = model
         self.request_buy = request_buy
@@ -121,6 +117,11 @@ class StockAgent():
         self.best_buy = 0
         self.timestamp = 0
         self.price = 0
+        self.verbose = verbose
+        self.simulate_on_price = simulate_on_price
+        self.last_action = {}
+        self.last_action["time"] = ''
+        self.last_action["action"] = ''
         
     def on_x(self, x):
         y = self.model.predict(np.array([x]))
@@ -142,11 +143,27 @@ class StockAgent():
             self.sell()
         
     def buy(self):
-        #print(f'BUY: {self.price} best_ask : {self.best_ask} best_bid: {self.best_bid}')
-        self.request_buy(self.price)
-        #self.request_buy(self.best_ask)
+
+        if (self.simulate_on_price):
+            self.log_action(f'BUY on current price: {self.price}')
+            self.request_buy(self.price)
+        else:
+            self.log_action(f'BUY on ask: {self.best_ask}')
+            self.request_buy(self.best_ask)
         
     def sell(self):
-        #print(f'SELL : {self.price} best_ask : {self.best_ask} best_bid: {self.best_bid}')
-        self.request_sell(self.price)
-        #self.request_sell(self.best_bid)
+        if (self.simulate_on_price):
+            self.log_action(f'SELL on current price: {self.price}')
+            self.request_sell(self.price)
+        else: 
+            self.log_action(f'SELL on bid: {self.best_bid}')
+            self.request_sell(self.best_bid)
+
+    def log_action(self, action):
+        self.last_action["time"] = dt.datetime.now()
+        self.last_action["action"] = action
+        if (self.verbose):
+            print(action)
+
+    def get_last_action(self):
+        return f"{self.last_action['time']} - {self.last_action['action']}"

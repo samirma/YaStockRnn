@@ -37,7 +37,7 @@ class SourceDataGenerator():
             np.save("{}{}valY.npy".format(final_path, prefix), valY)
         print("Saving {} with {}".format(train_path, trainX.shape))
 
-    def get_y_data(self, ohlc, shift = -1):
+    def get_y_data_old(self, ohlc, shift = -1):
         combined_data = ohlc.copy()
         #combined_data['return'] = np.log(combined_data / combined_data.shift(1))
         returns = (ohlc / ohlc.shift(shift))
@@ -202,14 +202,39 @@ class SourceDataGenerator():
 
         #print(agent.ohlc)
 
-        return final_x, closed_prices
+        return np.array(final_x), np.array(closed_prices)
 
 
 
 
 
 
+def get_online_data(minutes, source_data_generator, load_from_disk, file_prefix = ""):
+    
+    online = OnLineDataProvider(
+                 sourceDataGenerator = source_data_generator,
+                 minutes = minutes,
+                 train_keys = train_keys,
+                 train_limit = 1000,
+                 val_limit = 1000,
+                 val_keys = ["btcusd"],
+                 val_start = val_start,
+                 val_end = val_end,
+                 train_start_list = train_start_list
+    )
 
+    online_path = f'data/online{file_prefix}_{minutes}'
+    
+    if (load_from_disk):
+        online = load(online_path)    
+    else:
+        #online.load_train_cache()
+        online.load_cache()
+        online.sourceDataGenerator = None
+        dump(online, online_path)
+        
+    
+    return online
 
 
 

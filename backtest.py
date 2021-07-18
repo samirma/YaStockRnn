@@ -66,6 +66,7 @@ def get_y_data(ohlc, shift = -1):
     #combined_data['return'] = np.log(combined_data / combined_data.shift(1))
     
     keys = []
+    #print(f"##### {shift}")
     steps = (shift * -1) + 1
     for idx in range(1, steps):
         returns = (ohlc / ohlc.shift(-1 * idx))
@@ -108,7 +109,7 @@ def get_sequencial_data(trainX, trainY, step):
 def backtest_model(model, x, closed_prices, back):
     
     for idx in range(len(x)):
-        xx = [x[idx]]
+        xx = np.array([x[idx]])
         yy = model.predict(xx)[0]
         price = closed_prices[idx]
         #print(f'{idx} {yy} {price}')
@@ -119,7 +120,7 @@ def backtest_model(model, x, closed_prices, back):
             back.request_sell(price)
     
     #print(f"Closing backtest_model {back.current}")
-    back.request_sell(price)
+    back.sell(price)
     #print(f"Closed backtest_model {back.current}")
     
     return back
@@ -148,8 +149,9 @@ def backtest_baseline(x, y, closed_prices, step, back):
 def train_by_step(model, step, provider):
     trainX_raw, trainY_raw = provider.load_train_data()
     x, y, closed_prices = prepare_train_data(trainX_raw, trainY_raw, step)
-    #print(f"{trainX_raw.shape}")
+    #print(f"{trainX_raw.shape} {closed_prices.shape}")
     #print(closed_prices)
+    #print(f"{model}")
     model.fit(x, y)
     return x, y, closed_prices
 
@@ -289,11 +291,11 @@ class LocalDataProvider():
     def load_val_data(self, val):
         return load_data(f"simple_{val}", "train", path)
 
-    
+
 class OnLineDataProvider():
     #https://www.unixtimestamp.com/
     def __init__(self,
-                 sourceDataGenerator,
+                 source_data_generator,
                  minutes,
                  train_keys = ["btcusd", "ethusd"],
                  train_limit = 100,
@@ -317,7 +319,7 @@ class OnLineDataProvider():
         self.val_end = val_end
         
         self.train_start_list = train_start_list
-        self.sourceDataGenerator = sourceDataGenerator
+        self.source_data_generator = source_data_generator
         self.steps = (minutes * 60)
         self.resample = f'{minutes}Min'
     
@@ -330,7 +332,7 @@ class OnLineDataProvider():
 
         def load_from_time(time): 
             for curr in self.train_keys:
-                x, closed_prices = self.sourceDataGenerator.get_full_database_online(curr, 
+                x, closed_prices = self.source_data_generator.get_full_database_online(curr, 
                                                                                 resample = self.resample, 
                                                                                 limit = self.train_limit,
                                                                                 step = self.steps,
@@ -340,11 +342,12 @@ class OnLineDataProvider():
         for start_time in self.train_start_list:
             load_from_time(start_time)
 
-        self.train_data = self.sourceDataGenerator.conc_simple_sets(sets)
+        if (len(sets)>0):
+            self.train_data = self.source_data_generator.conc_simple_sets(sets)
             
     def load_val_cache(self, val_keys, start, end):
         for key in val_keys:
-            x, closed_prices = self.sourceDataGenerator.get_full_database_online(key, 
+            x, closed_prices = self.source_data_generator.get_full_database_online(key, 
                                                                             resample = self.resample, 
                                                                             limit = self.val_limit,
                                                                             step = self.steps,
