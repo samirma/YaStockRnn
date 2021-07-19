@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from sklearn import metrics
 from sklearn.utils import shuffle
 from data_util import *
 from stock_agent import *
@@ -17,9 +18,7 @@ def get_max_profit(x, y, closed_prices, step):
     return backtest_baseline(x, y, closed_prices, step, back)
 
 def run_trial(model, provider, step = 1):
-       
-    result_profits = -1
-    
+           
     reference_profit = {}
     models_profit = {}
 
@@ -75,7 +74,9 @@ def get_y_data(ohlc, shift = -1):
         combined_data[key] = returns
     
     for key in keys:
-        combined_data[f'direction{key}'] = np.where(combined_data[key] < 1, 1, 0)
+        #combined_data[f'direction{key}'] = np.where(combined_data[key] < 1, 1, 0)
+        combined_data[f'direction{key}'] = np.where(combined_data[key] < 0.998, 1, 0)
+
     
     combined_data[f'direction'] = combined_data[f'direction{keys[0]}']
     for idx in range(1, len(keys)):
@@ -143,8 +144,6 @@ def backtest_baseline(x, y, closed_prices, step, back):
     
     return back
 
-
-
     
 def train_by_step(model, step, provider):
     trainX_raw, trainY_raw = provider.load_train_data()
@@ -163,11 +162,12 @@ def eval_step(model, train_set, step, provider):
     
     preds = model.predict(x)
 
-    recall = recall_score(y, preds)
-    precision = precision_score(y, preds)
-    f1 = f1_score(y, preds)
-    accuracy = accuracy_score(y, preds)
-    roc_auc = roc_auc_score(y, preds)
+    metrics = {}
+    metrics["recall"] = recall_score(y, preds)
+    metrics["precision"] = precision_score(y, preds)
+    metrics["f1"] = f1_score(y, preds)
+    metrics["accuracy"] = accuracy_score(y, preds)
+    metrics["roc_auc"] = roc_auc_score(y, preds)
     
     back = BackTest(value = 100, 
                     verbose = False, 
@@ -176,7 +176,7 @@ def eval_step(model, train_set, step, provider):
     
     back = backtest_model(model, x, closed_prices, back)
     
-    return back, (precision, recall, f1, accuracy)
+    return back, metrics
 
 
 

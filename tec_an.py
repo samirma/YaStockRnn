@@ -13,17 +13,17 @@ import numpy as np
 def ta_list(win, fillna=True):
     tas = []   
     #Trend
-    tas.append(lambda close, volume, current_close, current_volume: (macd_diff(close, fillna=fillna)))
-    tas.append(lambda close, volume, current_close, current_volume: (rsi(close, fillna=fillna)/100))
+    tas.append(lambda close, volume, current_close, current_volume: (macd_diff(close, window_fast=win, window_slow=(win*2), fillna=fillna)))
+    tas.append(lambda close, volume, current_close, current_volume: (rsi(close, window=win, fillna=fillna)/100))
     tas.append(lambda close, volume, current_close, current_volume: (kst_sig(close, fillna=fillna)))
     tas.append(lambda close, volume, current_close, current_volume: (dpo(close, window=win, fillna=fillna)))
     tas.append(lambda close, volume, current_close, current_volume: (dpo(close, window=win*2, fillna=fillna)))
 
-    tas.append(lambda close, volume, current_close, current_volume: (stochrsi(close, fillna=fillna)))
-    tas.append(lambda close, volume, current_close, current_volume: (sma_indicator(close, fillna=fillna)/current_close))
+    tas.append(lambda close, volume, current_close, current_volume: (stochrsi(close, window=win, fillna=fillna)))
+    tas.append(lambda close, volume, current_close, current_volume: (sma_indicator(close, window=win, fillna=fillna)/current_close))
     
-    tas.append(lambda close, volume, current_close, current_volume: (np.log(aroon_down(close, fillna=fillna)/current_close)))
-    tas.append(lambda close, volume, current_close, current_volume: (np.log(aroon_up(close, fillna=fillna)/current_close)))
+    tas.append(lambda close, volume, current_close, current_volume: (aroon_down(close, window=win, fillna=fillna)))
+    tas.append(lambda close, volume, current_close, current_volume: (aroon_up(close, window=win, fillna=fillna)))
     
     #Vol
     #tas.append(lambda close, volume, current_close, current_volume: (ulcer_index(close, fillna=fillna)))
@@ -31,12 +31,12 @@ def ta_list(win, fillna=True):
 
     
     #Momentuom
-    tas.append(lambda close, volume, current_close, current_volume: (tsi(close, fillna=fillna)))
-    tas.append(lambda close, volume, current_close, current_volume: (stc(close, fillna=fillna)))
-    tas.append(lambda close, volume, current_close, current_volume: (ppo(close, fillna=fillna)))
+    tas.append(lambda close, volume, current_close, current_volume: (tsi(close, window_fast=win, window_slow=(win*2), fillna=fillna)))
+    tas.append(lambda close, volume, current_close, current_volume: (stc(close, window_fast=win, window_slow=(win*2), fillna=fillna)))
+    tas.append(lambda close, volume, current_close, current_volume: (ppo(close, window_fast=win, window_slow=(win*2), fillna=fillna)))
     #tas.append(lambda close, volume, current_close, current_volume: (kama(close, fillna=fillna)))
-    tas.append(lambda close, volume, current_close, current_volume: (ppo_signal(close, fillna=fillna)))
-    tas.append(lambda close, volume, current_close, current_volume: (pvo(close, fillna=fillna)))
+    tas.append(lambda close, volume, current_close, current_volume: (ppo_signal(close, window_fast=win, window_slow=(win*2), fillna=fillna)))
+    tas.append(lambda close, volume, current_close, current_volume: (pvo(close, window_fast=win, window_slow=(win*2), fillna=fillna)))
     tas.append(lambda close, volume, current_close, current_volume: (roc(close, window=win, fillna=fillna)))
     tas.append(lambda close, volume, current_close, current_volume: (roc(close, window=win*2, fillna=fillna)))
     

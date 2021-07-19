@@ -99,7 +99,7 @@ class RawStateDownloader(LiveBitstamp):
         #timestamp = raw[TIMESTAMP_KEY]
         #time = pd.to_datetime(timestamp, unit='s')
         if (self.verbose):
-            log = f"{self.stock.get_last_action()} | {self.back.get_profit()}"
+            log = f"{self.stock.get_last_action()} | {self.back.current}"
             if (log == self.last_log):
                 return
             self.last_log = log

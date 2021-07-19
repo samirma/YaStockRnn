@@ -1,16 +1,50 @@
 import json
 import websocket
-from time import sleep
-from threading import Thread, Lock
-import state_util
 from numpy import array
 from tqdm.notebook import tqdm
 import requests
-import json
-import pandas as pd
+import hashlib
+import hmac
+import time
+import requests
+import uuid
+import sys
 import datetime
 import numpy as np
 import datetime
+from stock_agent import *
+from configparser import ConfigParser
+import uuid
+from urllib.parse import urlencode
+
+class LiveTrader(BackTest):
+
+    def buy(self, ask):
+        super().buy(ask)
+ 
+    def sell(self, sell):
+        super().sell(sell)
+
+    def user_transactions(self, limit):
+        route = '/api/v2/user_transactions/'
+        payload = {
+            'limit': str(limit)
+        }
+
+        response = _query(self.userinfo, route, payload)
+        return response
+
+    def balance(self):
+        route = f'/api/v2/balance/'
+        response = _query(self.userinfo, route, {})
+        return response
+
+    def init(self):
+        config_object = ConfigParser()
+        config_object.read("config.ini")
+        self.userinfo = config_object["bitstamp"]
+        self.key = self.userinfo["key"]
+        self.secret = self.userinfo["secret"]
 
 
 def get_now_plus_min(min = 2):
@@ -211,3 +245,63 @@ def load_bitstamp_ohlc(currency_pair, start=-1, end=-1, step=60, limit=5):
     
     return ohlc["data"]["ohlc"]
 
+
+
+def _query(info, route, payload):
+    key = info['key']
+    secret = bytes(info['secret'], 'utf-8')
+    nonce = str(uuid.uuid4())
+    timestamp = str(int(round(time.time() * 1000)))
+
+    payload_string, content_type = '', ''
+    if payload != {}:
+        payload_string = urlencode(payload)
+        content_type = 'application/x-www-form-urlencoded'
+
+    message = 'BITSTAMP {}POSTwww.bitstamp.net{}{}{}{}v2{}'\
+        .format(key, route, content_type, nonce, timestamp, payload_string)\
+        .encode('utf-8')
+
+    signature = hmac.new(secret, msg=message, digestmod=hashlib.sha256).hexdigest()
+
+    headers = {
+        'X-Auth': f'BITSTAMP {key}',
+        'X-Auth-Signature': signature,
+        'X-Auth-Nonce': nonce,
+        'X-Auth-Timestamp': timestamp,
+        'X-Auth-Version': 'v2',
+    }
+
+    if content_type != '':
+        headers['Content-Type'] = content_type
+
+    full_url = f'https://www.bitstamp.net{route}'
+
+    #print(full_url)
+
+    response = requests.post(full_url,
+        headers=headers,
+        data=payload_string
+    )
+
+    if not response.status_code == 200:
+        raise Exception('Status code not 200 on route:{} {}'.format(route, response.status_code))
+
+    if response.reason != 'OK':
+        raise Exception('Invalid {} call; reason: {}'.format(route, response.reason))
+
+    content_type = response.headers.get('Content-Type')
+    if content_type is None:
+        raise Exception('Cannot get Content-Type response header.')
+
+    string_to_sign = (nonce + timestamp + content_type).encode('utf-8') + response.content
+    signature_check = hmac.new(secret, msg=string_to_sign, digestmod=hashlib.sha256).hexdigest()
+
+    if not response.headers.get('X-Server-Auth-Signature') == signature_check:
+        raise Exception('Signatures do not match')
+
+    content = json.loads(response.content)
+
+    return content
+
+    
