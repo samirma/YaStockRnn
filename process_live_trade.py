@@ -34,10 +34,11 @@ def load_online(minutes, window, val_end = 1626388860, currency = "btcusd"):
     return online
 
 
-def get_agent(minutes, win, model, hot_load = True, currency = "btcusd"):
+def get_agent(minutes, win, step, model, hot_load = True, currency = "btcusd"):
     
     back = BackTest(value = 100,
-                        verbose = True, 
+                        verbose = True,
+                        pending_sell_steps = step, 
                         sell_on_profit = True)
 
     request_sell = lambda price: back.request_sell(price)
@@ -132,7 +133,7 @@ def start_process_by_result(result, currency, simulate_on_price):
     print(f"Simulate on price {simulate_on_price}")
     print(f"{model}")
 
-    agent, back, stock = get_agent(minutes = minutes, win = window, model = model)
+    agent, back, stock = get_agent(minutes = minutes, win = window, step = step, model = model)
 
     stock.simulate_on_price = simulate_on_price
 

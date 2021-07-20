@@ -9,10 +9,10 @@ import pandas as pd
 class BackTest():
     
     def __init__(self, 
+                 pending_sell_steps,
                  initial_value = 100, 
                  value = 100,
                  verbose = False,
-                 pending_sell_steps = 1,
                  sell_on_profit = True
                 ):
         self.initial_value = initial_value
@@ -22,7 +22,7 @@ class BackTest():
         self.pending = -1
         self.sell_on_profit = sell_on_profit
         self.reset()
-        
+        print(f"BackTest (pending_sell_steps={self.pending_sell_steps} sell_on_profit={self.sell_on_profit}  value={self.value}")
         
     def reset(self):
         self.current = self.initial_value
@@ -46,15 +46,15 @@ class BackTest():
     def is_valid_sell(self, bid):
         is_pending = self.is_sell_pending()
         
-        has_loss = (bid < self.buy_price)
+        has_profit = (bid > self.buy_price)
         
         is_not_pending = (not is_pending)
         
-        profit_before_pending = ((is_pending and (not has_loss)) and self.sell_on_profit)
+        profit_before_pending = ((is_pending and (has_profit)) and self.sell_on_profit)
         
         is_valid = (self.is_bought() and (is_not_pending or profit_before_pending))
         
-        #print(f"{is_valid} pending ({self.pending}): {is_pending} - {is_not_pending} - {profit_before_pending}")
+        #print(f"{is_valid} Pending{self.pending} Bid ({bid}): {self.is_bought()} - {is_not_pending} - {profit_before_pending}")
         
         return is_valid
      

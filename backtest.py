@@ -17,7 +17,7 @@ def get_max_profit(x, y, closed_prices, step):
 
     return backtest_baseline(x, y, closed_prices, step, back)
 
-def run_trial(model, provider, step = 1):
+def run_trial(model, provider, step):
            
     reference_profit = {}
     models_profit = {}
@@ -28,7 +28,6 @@ def run_trial(model, provider, step = 1):
     
     model_result = {}
     
-    train_by_step(model, step, provider)
     profits = []
     for train_set in provider.val_keys:
         trainX_raw, trainY_raw = provider.load_val_data(train_set)
@@ -54,6 +53,7 @@ def run_trial(model, provider, step = 1):
     model_result['models_profit'] = models_profit
     model_result['models_score'] = models_score
     model_result['models_profit_metric'] = models_profit_metric
+    model_result['reference_profit'] = reference_profit
        
     return model_result
 
@@ -82,7 +82,7 @@ def get_y_data(ohlc, shift = -1):
     for idx in range(1, len(keys)):
         combined_data[f'direction'] = combined_data[f'direction{keys[idx]}'] + combined_data[f'direction'] 
     
-    combined_data[f'y'] = np.where(combined_data['direction'] > 0, 1, 0)
+    combined_data[f'y'] = np.where(combined_data['direction'] == (shift * -1), 1, 0)
     
     return combined_data[f'y'].to_numpy()
 
