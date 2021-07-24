@@ -57,38 +57,6 @@ def run_trial(model, provider, step):
        
     return model_result
 
-
-
-
-def get_y_data(ohlc, shift = -1):
-    combined_data = ohlc.copy()
-    #combined_data['return'] = np.log(combined_data / combined_data.shift(1))
-    
-    keys = []
-    #print(f"##### {shift}")
-    steps = (shift * -1) + 1
-    for idx in range(1, steps):
-        returns = (ohlc / ohlc.shift(-1 * idx))
-        key = f'{idx}'
-        keys.append(key)
-        combined_data[key] = returns
-    
-    for key in keys:
-        #combined_data[f'direction{key}'] = np.where(combined_data[key] < 1, 1, 0)
-        combined_data[f'direction{key}'] = np.where(combined_data[key] < 0.998, 1, 0)
-
-    
-    combined_data[f'direction'] = combined_data[f'direction{keys[0]}']
-    for idx in range(1, len(keys)):
-        combined_data[f'direction'] = combined_data[f'direction{keys[idx]}'] + combined_data[f'direction'] 
-    
-    combined_data[f'y'] = np.where(combined_data['direction'] == (shift * -1), 1, 0)
-    
-    return combined_data[f'y'].to_numpy()
-
-
-
-
 def prepare_train_data(trainX, trainY, step):
     y = get_y_data(
         pd.DataFrame(trainY, columns = ['Close']), 
@@ -295,15 +263,15 @@ class LocalDataProvider():
 class OnLineDataProvider():
     #https://www.unixtimestamp.com/
     def __init__(self,
-                 source_data_generator,
+                 source_data_generator :SourceDataGenerator,
                  minutes,
-                 train_keys = ["btcusd", "ethusd"],
+                 val_start,
+                 val_end,
+                 train_keys,
+                 val_keys,
+                 train_start_list,
                  train_limit = 100,
                  val_limit = 1000,
-                 val_keys = ["btcusd", "ethusd"],
-                 val_start = 1623435037,
-                 val_end = -1,
-                 train_start_list = [1569969462]
                 ):
         #self.train_keys = ["ltcbtc", "btceur", "btcusd", "bchusd", "ethusd", "xrpusd"]
         self.train_keys = train_keys
@@ -346,10 +314,10 @@ class OnLineDataProvider():
             self.train_data = self.source_data_generator.conc_simple_sets(sets)
             
     def load_val_cache(self, val_keys, start, end):
+
         for key in val_keys:
-            x, closed_prices = self.source_data_generator.get_full_database_online(key, 
-                                                                            resample = self.resample, 
-                                                                            limit = self.val_limit,
+            x, closed_prices = self.source_data_generator.get_full_database_online_period(key, 
+                                                                            resample = self.resample,
                                                                             step = self.steps,
                                                                             start=start,
                                                                             end=end

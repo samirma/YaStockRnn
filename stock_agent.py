@@ -22,7 +22,6 @@ class BackTest():
         self.pending = -1
         self.sell_on_profit = sell_on_profit
         self.reset()
-        print(f"BackTest (pending_sell_steps={self.pending_sell_steps} sell_on_profit={self.sell_on_profit}  value={self.value}")
         
     def reset(self):
         self.current = self.initial_value
@@ -98,6 +97,10 @@ class BackTest():
             print(f'{self.timestamp} Sell ({self.price}) profit: {profit} total: {self.current}')
         self.holding = 0
         self.buy_price = 0
+
+    
+    def __str__(self) -> str:
+        return f"BackTest (pending_sell_steps={self.pending_sell_steps} sell_on_profit={self.sell_on_profit}  value={self.value}"
             
 
 class StockAgent():

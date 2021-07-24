@@ -163,14 +163,7 @@ class SourceDataGenerator():
         return df[CLOSE][:-1], df.shift(-1)[OPEN][:-1]
 
 
-    def get_full_database_online(self, currency, resample, start=1619823600, end=-1, step=60, limit=10):
-
-        result = load_bitstamp_ohlc(currency, 
-                                    start=start,
-                                    end=end,
-                                    step=step, 
-                                    limit=limit)
-        
+    def process_online_data(self, result, resample, currency):
         init = datetime.datetime.fromtimestamp(int(result[0]['timestamp']))
         end = datetime.datetime.fromtimestamp(int(result[-1]['timestamp']))
         print(f"Downloaded from {init} to {end} {result[-1]['open']}")
@@ -203,6 +196,25 @@ class SourceDataGenerator():
         #print(agent.ohlc)
 
         return np.array(final_x), np.array(closed_prices)
+
+    def get_full_database_online(self, currency, resample, start=1619823600, end=-1, step=60, limit=10):
+
+        result = load_bitstamp_ohlc(currency, 
+                                    start=start,
+                                    end=end,
+                                    step=step, 
+                                    limit=limit)
+
+        return self.process_online_data(result, resample, currency)
+
+    def get_full_database_online_period(self, currency, resample, start, end, step=60, limit=1000):
+    
+        result = load_bitstamp_ohlc_by_period(currency, 
+                                    start=start,
+                                    end=end,
+                                    step=step)
+
+        return self.process_online_data(result, resample, currency)
 
 
 
@@ -287,11 +299,11 @@ def load_raw_data(name, sufix, path):
     Y = np.load(path + name + sufix + "Y.npy", allow_pickle=True)
     return X, Y
 
-def get_balanced_set(x, y):
-    oversample = RandomOverSampler(sampling_strategy='minority')
-    #print(Counter(y))
+def get_balanced_set(x, y, sampling_strategy='minority'):
+    oversample = RandomOverSampler(sampling_strategy=sampling_strategy)
+    print(Counter(y))
     X_over, y_over = oversample.fit_resample(x, y)
-    #print(Counter(y_over))
+    print(Counter(y_over))
     return X_over, y_over
 
 def get_balanced_set_seq(x, y):
@@ -353,3 +365,29 @@ def create_dataset(X, y, time_steps=1, null_value = [0, 0]):
 def get_gen(set_x, set_y, shuffle=True, batch_size=64, time_steps=30):
     set_y = prepare_y(set_y)
     return TimeseriesGenerator(set_x, set_y, length=time_steps, batch_size=batch_size, shuffle=shuffle)
+
+
+def get_y_data(ohlc, shift = -1):
+    combined_data = ohlc.copy()
+    #combined_data['return'] = np.log(combined_data / combined_data.shift(1))
+    
+    keys = []
+    steps = (shift * -1) + 1
+    for idx in range(1, steps):
+        returns = (ohlc / ohlc.shift(-1 * idx))
+        key = f'{idx}'
+        keys.append(key)
+        combined_data[key] = returns
+    
+    for key in keys:
+        #combined_data[f'direction{key}'] = np.where(combined_data[key] < 1, 1, 0)
+        combined_data[f'direction{key}'] = np.where(combined_data[key] < 0.999, 1, 0)
+
+    
+    combined_data[f'direction'] = combined_data[f'direction{keys[0]}']
+    for idx in range(1, len(keys)):
+        combined_data[f'direction'] = combined_data[f'direction{keys[idx]}'] + combined_data[f'direction'] 
+    
+    combined_data[f'y'] = np.where(combined_data['direction'] > 0, 1, 0)
+    
+    return combined_data[f'y'].to_numpy()

@@ -12,8 +12,7 @@ from bitstamp import *
 from datetime import datetime
 import argparse
 
-
-def load_online(minutes, window, val_end = 1626388860, currency = "btcusd"):
+def load_online(minutes, window, val_end, currency = "btcusd"):
     tec = TecAn(windows = window, windows_limit = 100)
     source_data_generator = SourceDataGenerator(tec = tec)
 
@@ -23,14 +22,20 @@ def load_online(minutes, window, val_end = 1626388860, currency = "btcusd"):
                  minutes = minutes,
                  train_keys = [],
                  train_limit = 40,
-                 val_limit = 400,
+                 val_limit = 1000,
                  val_keys = [currency],
-                 #val_start = val_start,
+                 val_start = val_end - (60000 * 60),
                  val_end = val_end,
-                 train_start_list = [1626386301]
+                 train_start_list = []
     )
 
-    online.load_cache()
+    start = val_end - (60 * 100 * minutes)
+    end = val_end - (60 * minutes)
+
+    online.load_val_cache(
+                    val_keys = [currency],                  
+                    start = start,
+                    end = end)
     return online
 
 
@@ -123,7 +128,6 @@ def start_process_index(results_path, index, currency, simulate_on_price):
     start_process_by_result(result[index], currency, simulate_on_price)
 
 def start_process_by_result(result, currency, simulate_on_price):
-    
     model = result['model']
     window = result['window']
     minutes = result['minutes']
@@ -133,7 +137,11 @@ def start_process_by_result(result, currency, simulate_on_price):
     print(f"Simulate on price {simulate_on_price}")
     print(f"{model}")
 
-    agent, back, stock = get_agent(minutes = minutes, win = window, step = step, model = model)
+    agent, back, stock = get_agent(minutes = minutes,
+                                    win = window,
+                                    step = step,
+                                    hot_load = True,
+                                    model = model)
 
     stock.simulate_on_price = simulate_on_price
 
