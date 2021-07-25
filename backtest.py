@@ -122,7 +122,7 @@ def train_by_step(model, step, provider):
     model.fit(x, y)
     return x, y, closed_prices
 
-def eval_step(model, train_set, step, provider):
+def eval_step(model, train_set, step, provider, verbose = False):
 
     valX, valY = provider.load_val_data(train_set)
     
@@ -138,7 +138,7 @@ def eval_step(model, train_set, step, provider):
     metrics["roc_auc"] = roc_auc_score(y, preds)
     
     back = BackTest(value = 100, 
-                    verbose = False, 
+                    verbose = verbose, 
                     sell_on_profit = True,
                     pending_sell_steps = step)
     
@@ -334,3 +334,6 @@ class OnLineDataProvider():
         print(f"Total train set {len(self.train_data[0])}")
         for key in self.val_keys:
             print(f"Total val {key} set {len(self.vals[key][0])}")
+
+    def __str__(self):
+        return f"OnLineDataProvider ( val_keys = {self.val_keys} | minutes = {self.minutes})"

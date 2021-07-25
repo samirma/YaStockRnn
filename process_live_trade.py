@@ -9,6 +9,7 @@ from backtest import *
 from joblib import *
 from tec_an import *
 from bitstamp import *
+from model import *
 from datetime import datetime
 import argparse
 
@@ -29,7 +30,7 @@ def load_online(minutes, window, val_end, currency = "btcusd"):
                  train_start_list = []
     )
 
-    start = val_end - (60 * 100 * minutes)
+    start = val_end - (60 * 400 * minutes)
     end = val_end - (60 * minutes)
 
     online.load_val_cache(
@@ -80,6 +81,10 @@ def get_agent(minutes, win, step, model, hot_load = True, currency = "btcusd"):
         valX, valY = online.load_val_data(currency)
         for yy in valY:
             agent.taProc.add_tacs_realtime([], yy, 0.0, agent.tec)
+        eval_back, metrics = eval_step(model, currency, step, online)
+        print("###### Past report ######")
+        eval_back.report()
+        print("###### - ######")
 
     return agent, back, stock
 

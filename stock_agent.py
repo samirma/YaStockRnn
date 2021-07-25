@@ -28,12 +28,16 @@ class BackTest():
         self.holding = 0
         self.buy_price = 0
         self.timestamp = 0
+        self.positive_trades = 0
+        self.negative_trades = 0
+        self.states = 0
         
         
     def on_state(self, timestamp, price):
         self.timestamp = pd.to_datetime(timestamp, unit='s')
         self.price = price
         self.pending -= 1
+        self.states += 1
         #print(f'on_state: {self.price} {self.timestamp}')
        
     def is_sell_pending(self):
@@ -74,6 +78,7 @@ class BackTest():
         print(self.current)
         percentage = self.get_profit()
         print(f'{percentage}%')
+        print(f'States: {self.states} Positive: {self.positive_trades} Negative: {self.negative_trades}')
         
     def get_profit(self):
         percentage = ((self.current*100)/self.initial_value) - 100
@@ -91,6 +96,12 @@ class BackTest():
         profit = (sell - self.buy_price) * self.holding
         profit = round(profit, 4)
         positive = (profit > 0)
+
+        if (positive):
+            self.positive_trades += 1
+        else:
+            self.negative_trades += 1
+        
         if (self.verbose):
             if (not positive):
                 print(f'#### LOSSSS: {profit}')

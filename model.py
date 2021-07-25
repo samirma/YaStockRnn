@@ -1,6 +1,7 @@
 from numpy import array
 import numpy as np
 
+from pytorch_tabnet.tab_model import TabNetClassifier
 
 import datetime
 from datetime import datetime
@@ -63,3 +64,12 @@ def get_model(n_input, features):
 def load_model(filepath = "drive/My Drive/model/stock.h5"):
     model_loaded = tf.keras.models.load_model(filepath)
     return model_loaded
+
+
+
+class TabNetClassifierEarly(TabNetClassifier):
+    def fit(self, X_train, Y_train):
+        super().fit(X_train, 
+                    Y_train, 
+                    eval_set=[(X_train, Y_train)],
+                    eval_metric=['balanced_accuracy'])
