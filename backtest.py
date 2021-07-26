@@ -76,8 +76,10 @@ def get_sequencial_data(trainX, trainY, step):
 
 
 def backtest_model(model, x, closed_prices, back):
-    
-    for idx in range(len(x)):
+    limit = len(x)
+    if (limit > 3000):
+        limit = 3000
+    for idx in range(limit):
         xx = np.array([x[idx]])
         yy = model.predict(xx)[0]
         price = closed_prices[idx]
@@ -96,8 +98,10 @@ def backtest_model(model, x, closed_prices, back):
 
 
 def backtest_baseline(x, y, closed_prices, step, back):
-    
-    for idx in range(len(x)):
+    limit = len(x)
+    if (limit > 3000):
+        limit = 3000
+    for idx in range(limit):
         yy = y[idx]
         price = closed_prices[idx]
         #print(f'{idx} {yy} {price}')
