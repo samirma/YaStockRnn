@@ -76,8 +76,9 @@ def get_agent(minutes, win, step, model, hot_load = True, currency = "btcusd"):
     if (hot_load):
         timestamp = int(datetime.timestamp((datetime.now())))
         online = load_online(minutes = minutes, 
+                            currency= currency,
                              window = win, 
-                             val_end = timestamp)
+                            val_end = timestamp)
         valX, valY = online.load_val_data(currency)
         for yy in valY:
             agent.taProc.add_tacs_realtime([], yy, 0.0, agent.tec)
@@ -145,6 +146,7 @@ def start_process_by_result(result, currency, simulate_on_price):
     agent, back, stock = get_agent(minutes = minutes,
                                     win = window,
                                     step = step,
+                                    currency = currency,
                                     hot_load = True,
                                     model = model)
 
