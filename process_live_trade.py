@@ -55,7 +55,8 @@ def get_agent(minutes, win, step, model, hot_load = True, currency = "btcusd"):
         model = model,
         request_sell = request_sell,
         request_buy = request_buy,
-        on_state = on_state
+        on_state = on_state,
+        verbose = True
     )
 
 
@@ -70,7 +71,8 @@ def get_agent(minutes, win, step, model, hot_load = True, currency = "btcusd"):
         tec = TecAn(windows = win, windows_limit = 100),
         resample = f'{minutes}Min',
         on_state = on_state,
-        on_new_data = on_new_data
+        on_new_data = on_new_data,
+        verbose = False
     )
     
     if (hot_load):
@@ -95,7 +97,11 @@ raw_data_live = []
 
 class RawStateDownloader(LiveBitstamp):
     
-    def __init__(self, agent : DataAgent, stock : StockAgent, back : BackTest, on_raw_data = lambda raw: print(raw), verbose = False):
+    def __init__(self, agent : DataAgent, 
+                        stock : StockAgent, 
+                        back : BackTest, 
+                        on_raw_data = lambda raw: print(raw), 
+                        verbose = False):
         self.trade = {}
         self.verbose = verbose
         self.on_new_data_count = 0
@@ -160,7 +166,7 @@ def start_process_by_result(result, currency, simulate_on_price):
                         stock = stock,
                         back = back,
                         on_raw_data = on_raw_data, 
-                        verbose = True
+                        verbose = False
                         )
 
     bt = Bitstamp(live, currency = currency)

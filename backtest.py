@@ -62,7 +62,7 @@ def prepare_train_data(trainX, trainY, step):
         pd.DataFrame(trainY, columns = ['Close']), 
         (-1 * step)
     )
-    x, y, closed_prices = trainX, y, trainY
+    x, y, closed_prices = series_to_supervised(trainX, n_in=2), y, trainY
     return shuffle(x, y, closed_prices, random_state = 10)
 
 
@@ -71,7 +71,7 @@ def get_sequencial_data(trainX, trainY, step):
         pd.DataFrame(trainY, columns = ['Close']), 
         (-1 * step)
     )
-    x, y, closed_prices = trainX, y, trainY
+    x, y, closed_prices = series_to_supervised(trainX, n_in=2), y, trainY
     return x, y, closed_prices
 
 

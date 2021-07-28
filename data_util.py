@@ -1,9 +1,6 @@
 from tqdm.notebook import tqdm
 import os
-import state_util
 import numpy as np
-from state_util import StateUtil
-import random
 from data_generator import *
 from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator, pad_sequences
 from bitstamp import *
@@ -11,7 +8,6 @@ from data_agent import *
 
 from collections import Counter
 from imblearn.over_sampling import RandomOverSampler
-
 
 class SourceDataGenerator():
     def __init__(self,

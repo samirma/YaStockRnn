@@ -170,6 +170,7 @@ def get_all_models(indexs_models):
         classifiers.append(classifiers_temp[index])
 
     for cls in classifiers:
+        models.append(cls())
         add_normalizers(models, cls)
         #models.append(MockModel(cls()))
         #models.append(MockCoPilotModel(cls(), getModel()))

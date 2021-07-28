@@ -47,7 +47,8 @@ class DataAgent():
                  tec = TecAn(windows = 20, windows_limit = 100),
                  on_new_data = lambda x: print("{}".format(x)),
                  on_state = lambda timestamp, price, bid, ask: price,
-                 on_closed_price = lambda price: price
+                 on_closed_price = lambda price: price,
+                 verbose = False
                  ):
         self.taProc = taProc
         self.tec = tec
@@ -62,6 +63,7 @@ class DataAgent():
         self.on_state = on_state
         self.on_closed_price = on_closed_price
         self.on_new_data_count = 0
+        self.verbose = verbose
         print("Resample {} - {}".format(self.resample, self.tec))
         
     def on_new_data(self, x):

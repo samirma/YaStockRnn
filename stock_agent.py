@@ -1,10 +1,9 @@
 import pandas as pd
 import datetime as dt
 import numpy as np
-from data_util import *
 from sklearn_model_hyper import *
 import pandas as pd
-
+from pandas import concat
 
 class BackTest():
     
@@ -134,11 +133,19 @@ class StockAgent():
         self.verbose = verbose
         self.simulate_on_price = simulate_on_price
         self.last_action = {}
+        self.cache = []
         self.last_action["time"] = ''
         self.last_action["action"] = ''
         
     def on_x(self, x):
-        y = self.model.predict(np.array([x]))
+        #self.log_action("on_x")
+        if (len(self.cache) > 10):
+            self.cache.pop(0)
+        self.cache.append(x)
+        xx = series_to_supervised(self.cache)
+        #print(x)
+        #print(xx[-1])
+        y = self.model.predict(np.array([xx[-1]]))
         self.on_predicted(y[0])
         
     def on_new_state(self, timestamp, price, bid, ask):
@@ -177,7 +184,24 @@ class StockAgent():
         self.last_action["time"] = dt.datetime.now()
         self.last_action["action"] = action
         if (self.verbose):
-            print(action)
+            print(self.get_last_action())
 
     def get_last_action(self):
         return f"{self.last_action['time']} - {self.last_action['action']}"
+
+
+def series_to_supervised(data, n_in=2, n_out=1):
+    n_vars = 1
+    df = pd.DataFrame(data)
+    cols = list()
+    # input sequence (t-n, ... t-1)
+    for i in range(n_in, 0, -1):
+        cols.append(df.shift(i))
+    # forecast sequence (t, t+1, ... t+n)
+    for i in range(0, n_out):
+        cols.append(df.shift(i))
+    # put it all together
+    agg = concat(cols, axis=1)
+    # drop rows with NaN values
+    
+    return agg.fillna(0).values
