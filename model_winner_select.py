@@ -55,7 +55,7 @@ def order(e):
     #return e['models_profit_metric']['btcusd']
 
 
-def load_online(minutes, window, val_end, currency = []):
+def load_online(minutes, window, val_end, currency_list = []):
     tec = TecAn(windows = window, windows_limit = 100)
     source_data_generator = SourceDataGenerator(tec = tec)
 
@@ -68,7 +68,7 @@ def load_online(minutes, window, val_end, currency = []):
                  train_keys = [],
                  train_limit = 40,
                  val_limit = 999,
-                 val_keys = currency,
+                 val_keys = currency_list,
                  val_start = start,
                  val_end = end,
                  train_start_list = []
@@ -114,7 +114,7 @@ def load_results_from_path_list(path_list):
             if(result['profit'] > 100):
                 all_models.append(result)
         
-    print(len(all_models))
+    print(f"Pre selected: {len(all_models)}")
     return all_models
 
 
@@ -140,7 +140,7 @@ def get_scorecoard(currs, all_models, timestamp, minutes_list):
             online = online_cache[cache_key]
         except :
             #print(f"Not found {cache_key}")
-            online = load_online(minutes = minutes, window = window, val_end = timestamp, currency = currs)
+            online = load_online(minutes = minutes, window = window, val_end = timestamp, currency_list = currs)
             online_cache[cache_key] = online
             
         profits = []
@@ -166,7 +166,7 @@ def get_scorecoard(currs, all_models, timestamp, minutes_list):
 
     return scoreboard
 
-def run_models(currency_list, result_paths, timestamp, minutes_list, winner_path):
+def get_best_model(currency_list, result_paths, timestamp, minutes_list, winner_path):
 
     all_models = load_results_from_path_list(result_paths)
 
@@ -196,11 +196,22 @@ def run_models(currency_list, result_paths, timestamp, minutes_list, winner_path
     for back in backs:
         backs[back].report()
     print_result(winner)
-    dump(winner, winner_path)
+    if (winner_path != None):
+        dump(winner, winner_path)
     print()
+    return winner
 
-def add_arguments(parser):
+def add_arguments_winner(parser):
+
+    minutes = [15, 5, 3]
+
+    path = "model/"
+    files = os.listdir(path)
+    models = []
+    for file in files:
+        models.append(f"{path}{file}")
     
+
     parser.add_argument('--minutes',
                     dest='minutes_list',
                     help='Define minutes',
@@ -213,10 +224,11 @@ def add_arguments(parser):
                 dest='result_paths_list',
                 help='Define result_paths',
                 action="store",
+                default=models,
                 nargs='+'
                 )
 
-    parser.add_argument('--c',
+    parser.add_argument('--cl',
                 dest='currency_list',
                 help='Define currency_list',
                 action="store",
@@ -231,11 +243,9 @@ def add_arguments(parser):
 
 if __name__ == '__main__':
 
-    minutes = [15, 5, 3, 1]
-
     parser = argparse.ArgumentParser()
 
-    add_arguments(parser)
+    add_arguments_winner(parser)
 
     args = parser.parse_args()
 
@@ -246,7 +256,7 @@ if __name__ == '__main__':
     print(f"Result_paths: {args.result_paths_list}")
     print(f"winner_path: {args.winner_path}")
 
-    run_models(
+    get_best_model(
         minutes_list=args.minutes_list,
         result_paths=args.result_paths_list,
         currency_list=args.currency_list,

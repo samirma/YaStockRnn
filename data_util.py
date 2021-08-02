@@ -8,6 +8,7 @@ from data_agent import *
 
 from collections import Counter
 from imblearn.over_sampling import RandomOverSampler
+from imblearn.under_sampling import RandomUnderSampler 
 
 class SourceDataGenerator():
     def __init__(self,
@@ -297,9 +298,16 @@ def load_raw_data(name, sufix, path):
 
 def get_balanced_set(x, y, sampling_strategy='minority'):
     oversample = RandomOverSampler(sampling_strategy=sampling_strategy)
-    print(Counter(y))
+    #print(Counter(y))
     X_over, y_over = oversample.fit_resample(x, y)
-    print(Counter(y_over))
+    #print(Counter(y_over))
+    return X_over, y_over
+
+def get_under_balanced_set(x, y):
+    oversample = RandomUnderSampler(random_state=42)
+    #print(Counter(y))
+    X_over, y_over = oversample.fit_resample(x, y)
+    #print(Counter(y_over))
     return X_over, y_over
 
 def get_balanced_set_seq(x, y):

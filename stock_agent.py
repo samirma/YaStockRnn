@@ -81,7 +81,8 @@ class BackTest():
         
     def get_profit(self):
         percentage = ((self.current*100)/self.initial_value) - 100
-        return round(percentage, 4)
+        #return self.positive_trades - self.negative_trades
+        return round(percentage, 5)
         
     def buy(self, ask):
         self.current = self.current - self.value
@@ -139,13 +140,13 @@ class StockAgent():
         
     def on_x(self, x):
         #self.log_action("on_x")
-        if (len(self.cache) > 10):
-            self.cache.pop(0)
-        self.cache.append(x)
-        xx = series_to_supervised(self.cache)
+        #if (len(self.cache) > 10):
+        #    self.cache.pop(0)
+        #self.cache.append(x)
+        #xx = series_to_supervised(self.cache)
         #print(x)
         #print(xx[-1])
-        y = self.model.predict(np.array([xx[-1]]))
+        y = self.model.predict(np.array([x]))
         self.on_predicted(y[0])
         
     def on_new_state(self, timestamp, price, bid, ask):

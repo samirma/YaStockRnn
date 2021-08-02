@@ -10,6 +10,7 @@ from joblib import *
 from tec_an import *
 from bitstamp import *
 from model import *
+from model_winner_select import *
 from datetime import datetime
 import argparse
 
@@ -30,7 +31,7 @@ def load_online(minutes, window, val_end, currency = "btcusd"):
                  train_start_list = []
     )
 
-    start = val_end - (60 * 400 * minutes)
+    start = val_end - (60 * 1000 * minutes)
     end = val_end - (60 * minutes)
 
     online.load_val_cache(
@@ -184,9 +185,27 @@ if __name__ == '__main__':
 
     parser.add_argument('--p', dest="simulate_on_price", default=True, action=argparse.BooleanOptionalAction)
 
+    add_arguments_winner(parser)
+
     args = parser.parse_args()
 
-    if (args.results_path != None and args.index != None):
+    if (args.result_paths_list != None and len(args.result_paths_list) > 0):
+        print(f"minutes: {args.minutes_list}")
+        print(f"Evaluate on currency_list: {args.currency_list}")
+        print(f"Process on currency: {args.currency}")
+        print(f"result_paths_list: {args.result_paths_list}")
+
+        timestamp = int(datetime.timestamp((datetime.now())))
+        winner = get_best_model(
+            minutes_list=args.minutes_list,
+            result_paths=args.result_paths_list,
+            currency_list=args.currency_list,
+            timestamp = timestamp,
+            winner_path = None
+        )
+        print("Winner found")
+        start_process_by_result(winner, args.currency, args.simulate_on_price)
+    elif (args.results_path != None and args.index != None):
         start_process_index(results_path = args.results_path, index = args.index, currency = args.currency, simulate_on_price = args.simulate_on_price)
     else:
         start_process_path(args.result_path, currency = args.currency, simulate_on_price = args.simulate_on_price)

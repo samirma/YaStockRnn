@@ -4,9 +4,6 @@ from ta.momentum import *
 from ta.volume import *
 from ta.volatility import *
 from ta import add_all_ta_features, add_trend_ta, add_volume_ta, add_volatility_ta, add_momentum_ta, add_others_ta
-import matplotlib.pyplot as plt
-import multiprocessing
-import threading
 import numpy as np
 
 
@@ -16,14 +13,13 @@ def ta_list(win, fillna=True):
     tas.append(lambda close, volume, current_close, current_volume: (macd_diff(close, window_fast=win, window_slow=(win*2), fillna=fillna)))
     tas.append(lambda close, volume, current_close, current_volume: (rsi(close, window=win, fillna=fillna)/100))
     tas.append(lambda close, volume, current_close, current_volume: (kst_sig(close, fillna=fillna)))
-    tas.append(lambda close, volume, current_close, current_volume: (dpo(close, window=win, fillna=fillna)))
-    tas.append(lambda close, volume, current_close, current_volume: (dpo(close, window=win*2, fillna=fillna)))
+    #tas.append(lambda close, volume, current_close, current_volume: (dpo(close, window=win, fillna=fillna)))
 
-    tas.append(lambda close, volume, current_close, current_volume: (stochrsi(close, window=win, fillna=fillna)))
-    tas.append(lambda close, volume, current_close, current_volume: (sma_indicator(close, window=win, fillna=fillna)/current_close))
+    #tas.append(lambda close, volume, current_close, current_volume: (stochrsi(close, window=win, fillna=fillna)))
+    #tas.append(lambda close, volume, current_close, current_volume: (sma_indicator(close, window=win, fillna=fillna)/current_close))
     
-    tas.append(lambda close, volume, current_close, current_volume: (aroon_down(close, window=win, fillna=fillna)))
-    tas.append(lambda close, volume, current_close, current_volume: (aroon_up(close, window=win, fillna=fillna)))
+    #tas.append(lambda close, volume, current_close, current_volume: (aroon_down(close, window=win, fillna=fillna)))
+    #tas.append(lambda close, volume, current_close, current_volume: (aroon_up(close, window=win, fillna=fillna)))
     
     #Vol
     #tas.append(lambda close, volume, current_close, current_volume: (ulcer_index(close, fillna=fillna)))
@@ -33,12 +29,11 @@ def ta_list(win, fillna=True):
     #Momentuom
     tas.append(lambda close, volume, current_close, current_volume: (tsi(close, window_fast=win, window_slow=(win*2), fillna=fillna)))
     tas.append(lambda close, volume, current_close, current_volume: (stc(close, window_fast=win, window_slow=(win*2), fillna=fillna)))
-    tas.append(lambda close, volume, current_close, current_volume: (ppo(close, window_fast=win, window_slow=(win*2), fillna=fillna)))
+    tas.append(lambda close, volume, current_close, current_volume: (ppo(close, fillna=fillna)))
     #tas.append(lambda close, volume, current_close, current_volume: (kama(close, fillna=fillna)))
-    tas.append(lambda close, volume, current_close, current_volume: (ppo_signal(close, window_fast=win, window_slow=(win*2), fillna=fillna)))
+    #tas.append(lambda close, volume, current_close, current_volume: (ppo_signal(close, window_fast=win, window_slow=(win*2), fillna=fillna)))
     tas.append(lambda close, volume, current_close, current_volume: (pvo(close, window_fast=win, window_slow=(win*2), fillna=fillna)))
     tas.append(lambda close, volume, current_close, current_volume: (roc(close, window=win, fillna=fillna)))
-    tas.append(lambda close, volume, current_close, current_volume: (roc(close, window=win*2, fillna=fillna)))
     
     #Volume
     #tas.append(lambda close, volume, current_close, current_volume: (on_balance_volume(close, volume, fillna=fillna)))
@@ -73,17 +68,17 @@ class TecAn:
             value = 0
         list.append(value)
     
-    def generate_custom_ta(self, list, close):
+    def generate_custom_ta(self, list, close, win):
         combined_data = close
         return_price = np.log(combined_data / combined_data.shift(1))
         
-        self.add_custom_add(list, return_price.rolling(5).mean().shift(1))
-        self.add_custom_add(list, return_price.rolling(20).std().shift(1))
-        self.add_custom_add(list, (return_price - return_price.rolling(30).mean()).shift(1))
+        self.add_custom_add(list, return_price.rolling(win).mean().shift(1))
+        self.add_custom_add(list, return_price.rolling(win*2).std().shift(1))
+        self.add_custom_add(list, (return_price - return_price.rolling(win).mean()).shift(1))
         
-        self.add_custom_add(list, return_price.rolling(10).mean().shift(1))
-        self.add_custom_add(list, return_price.rolling(10).std().shift(1))
-        self.add_custom_add(list, (return_price - return_price.rolling(10).mean()).shift(1))
+        self.add_custom_add(list, return_price.rolling(win).mean().shift(1))
+        self.add_custom_add(list, return_price.rolling(win).std().shift(1))
+        self.add_custom_add(list, (return_price - return_price.rolling(win).mean()).shift(1))
         
         
 
@@ -99,15 +94,16 @@ class TecAn:
         close = df['Close']
         volume = df['Volume']
         #print("Received: {} {}".format(price, amount))
+
+        self.generate_custom_ta(list, close, self.windows)
+        
         for ta in self.tas:
             value = ta(close, volume, price, amount).iloc[-1]
             if (np.isnan(value)):
                 value = 0
             list.append(value)
         #print(list)
-        
-        #self.generate_custom_ta(list, close)
-        
+                
         self.indicators = list
         self.price  = price
         self.amount = amount

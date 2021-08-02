@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-from sklearn import metrics
 from sklearn.utils import shuffle
 from data_util import *
 from stock_agent import *
@@ -62,8 +61,10 @@ def prepare_train_data(trainX, trainY, step):
         pd.DataFrame(trainY, columns = ['Close']), 
         (-1 * step)
     )
-    x, y, closed_prices = series_to_supervised(trainX, n_in=2), y, trainY
-    return shuffle(x, y, closed_prices, random_state = 10)
+    #x, y = series_to_supervised(trainX, n_in=2), y
+    x, y = get_balanced_set(trainX, y)
+    return x, y
+    #return shuffle(x, y, random_state = 10)
 
 
 def get_sequencial_data(trainX, trainY, step):
@@ -71,7 +72,8 @@ def get_sequencial_data(trainX, trainY, step):
         pd.DataFrame(trainY, columns = ['Close']), 
         (-1 * step)
     )
-    x, y, closed_prices = series_to_supervised(trainX, n_in=2), y, trainY
+    #x, y, closed_prices = series_to_supervised(trainX, n_in=2), y, trainY
+    x, y, closed_prices = trainX, y, trainY
     return x, y, closed_prices
 
 
@@ -119,12 +121,9 @@ def backtest_baseline(x, y, closed_prices, step, back):
     
 def train_by_step(model, step, provider):
     trainX_raw, trainY_raw = provider.load_train_data()
-    x, y, closed_prices = prepare_train_data(trainX_raw, trainY_raw, step)
-    #print(f"{trainX_raw.shape} {closed_prices.shape}")
-    #print(closed_prices)
-    #print(f"{model}")
+    x, y = prepare_train_data(trainX_raw, trainY_raw, step)
     model.fit(x, y)
-    return x, y, closed_prices
+    return x, y
 
 def eval_step(model, train_set, step, provider, verbose = False):
 

@@ -9,10 +9,6 @@ from backtest import *
 from bitstamp import *
 from model import *
 
-from keras.wrappers.scikit_learn import KerasClassifier
-from imblearn.over_sampling import RandomOverSampler
-import random
-from catboost import CatBoost
 
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -99,7 +95,7 @@ def get_classifiers():
         #                            early_stopping=True)
         #                        ),
         
-        #lambda : MLPClassifier(alpha=1, random_state=1, max_iter=20000, early_stopping=True),
+        lambda : MLPClassifier(alpha=1, random_state=1, max_iter=20000, early_stopping=True),
         
         lambda : xgb.XGBClassifier(random_state=1,
                                    objective = "binary:logistic",
@@ -107,8 +103,8 @@ def get_classifiers():
                                    learning_rate=0.01),
         
         #lambda : GaussianNB(),
-        #lambda : QuadraticDiscriminantAnalysis(),
-        #lambda : AdaBoostClassifier(random_state = 42),
+        lambda : QuadraticDiscriminantAnalysis(),
+        lambda : AdaBoostClassifier(random_state = 42),
         
         lambda : TabNetClassifierEarly(verbose=0),
         
@@ -151,7 +147,7 @@ estimators.append(lambda : RFECV(estimator=DecisionTreeClassifier(random_state=1
                     scoring='f1'))    
 estimators.append(lambda : RFECV(estimator=DecisionTreeClassifier(random_state=10),
                     scoring='precision'))    
-estimators = []
+
 estimators.append(lambda : RFECV(estimator=DecisionTreeClassifier(random_state=10),
                     scoring='recall'))
 
@@ -218,7 +214,7 @@ def test_models(provider, get_all_models_factory, steps = [1]):
     for step_idx in score_board_by_step:
         step_board = score_board_by_step[step_idx]
         for result in step_board:
-            if (result['profit'] > 0):
+            if (result['profit'] > 101):
                 model_rank.append(result)
             
     model_rank.sort(key=myFunc, reverse = True)
@@ -295,10 +291,11 @@ def start_model_search(minutes, windows, steps, models_index_list, model_path):
     best_results = process(minutes, windows, steps, models_index_list)
     print(f"Results {len(best_results)}")
 
-    try:
-        saved_models = load(model_path)
-    except:
-        saved_models = []
+    #try:
+    #    saved_models = load(model_path)
+    #except:
+    #    saved_models = []
+    saved_models = []
 
     for result in best_results:
         saved_models.append(result)
@@ -312,11 +309,11 @@ def start_model_search(minutes, windows, steps, models_index_list, model_path):
         if (best['profit'] < 100):
             continue
         print_result(best)
-        window = best['window']
-        minutes = best['minutes']
-        step = best['step']
-        model_path = f'model/result_{window}_{minutes}_{step}'
-        dump(best, model_path)
+        #window = best['window']
+        #minutes = best['minutes']
+        #step = best['step']
+        #model_path = f'model/result_{window}_{minutes}_{step}'
+        #dump(best, model_path)
         print(f"")
 
 def add_arguments(parser):
@@ -371,11 +368,11 @@ def add_arguments(parser):
 
 if __name__ == '__main__':
 
-    steps = [1, 5]
+    steps = [1]
 
     windows = [5, 10, 20, 30, 40]
 
-    minutes = [15, 5, 3, 1]
+    minutes = [15, 5, 3]
 
     models_index_list = [i for i in range(len(get_classifiers()))]
 
