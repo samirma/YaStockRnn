@@ -60,23 +60,26 @@ class BackTest():
         
         return is_valid
      
-    def request_buy(self, ask):
-        #print("request_buy {}".format(buy))
-        if (not self.is_bought()):
+    def request_buy(self, bid, ask):
+        if (self.is_bought()):
+            positive, profit = self.is_profit(bid)
+            if (positive):
+                if (self.verbose):
+                    print(f"Profit detected price:{self.price}  bid:{bid} ask:{ask}")
+                self.sell(bid)
+        else:
             self.buy(ask)
         self.pending = self.pending_sell_steps
         
-    def request_sell(self, bid):
+    def request_sell(self, bid, ask):
         if (self.is_valid_sell(bid)):
             self.sell(bid)
             self.pending = -1
         
         
     def report(self):
-        print(self.initial_value)
-        print(self.current)
         percentage = self.get_profit()
-        print(f'{percentage}%')
+        print(f'{percentage}% -> {self.current}')
         print(f'States: {self.states} Positive: {self.positive_trades} Negative: {self.negative_trades}')
         
     def get_profit(self):
@@ -90,12 +93,16 @@ class BackTest():
         self.buy_price = ask
         if (self.verbose):
             print(f'{self.timestamp} Buy ({self.price}): ask: {ask}')
- 
-    def sell(self, sell):
-        self.current = self.current + (sell * self.holding)
-        profit = (sell - self.buy_price) * self.holding
+
+    def is_profit(self, bid):
+        profit = (bid - self.buy_price) * self.holding
         profit = round(profit, 4)
         positive = (profit > 0)
+        return positive, profit
+ 
+    def sell(self, bid):
+        self.current = self.current + (bid * self.holding)
+        positive, profit = self.is_profit(bid)
 
         if (positive):
             self.positive_trades += 1
@@ -117,8 +124,8 @@ class BackTest():
 class StockAgent():
     
     def __init__(self, model = [],
-                request_sell = lambda price: price,
-                request_buy = lambda price: price,
+                request_sell = lambda bid, ask: bid,
+                request_buy = lambda bid, ask: ask,
                 on_state = lambda timestamp, price: timestamp,
                 verbose = False,
                 simulate_on_price = True,
@@ -168,18 +175,18 @@ class StockAgent():
 
         if (self.simulate_on_price):
             self.log_action(f'BUY on current price: {self.price}')
-            self.request_buy(self.price)
+            self.request_buy(ask = self.price, bid = self.price)
         else:
             self.log_action(f'BUY on ask: {self.best_ask}')
-            self.request_buy(self.best_ask)
+            self.request_buy(ask = self.best_ask, bid = self.best_bid)
         
     def sell(self):
         if (self.simulate_on_price):
             self.log_action(f'SELL on current price: {self.price}')
-            self.request_sell(self.price)
+            self.request_sell(ask = self.price, bid = self.price)
         else: 
             self.log_action(f'SELL on bid: {self.best_bid}')
-            self.request_sell(self.best_bid)
+            self.request_sell(ask = self.best_ask, bid = self.best_bid)
 
     def log_action(self, action):
         self.last_action["time"] = dt.datetime.now()

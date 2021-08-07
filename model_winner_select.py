@@ -55,26 +55,30 @@ def order(e):
     #return e['models_profit_metric']['btcusd']
 
 
-def load_online(minutes, window, val_end, currency_list = []):
+def load_online(minutes, window, val_end, currency_list = ["btcusd"]):
     tec = TecAn(windows = window, windows_limit = 100)
     source_data_generator = SourceDataGenerator(tec = tec)
 
-    start = val_end - (60 * 100 * minutes)
-    end = val_end - (160 * minutes)
 
     online = OnLineDataProvider(
                  source_data_generator = source_data_generator,
                  minutes = minutes,
                  train_keys = [],
                  train_limit = 40,
-                 val_limit = 999,
+                 val_limit = 1000,
                  val_keys = currency_list,
-                 val_start = start,
-                 val_end = end,
+                 val_start = val_end - (60000 * 60),
+                 val_end = val_end,
                  train_start_list = []
     )
 
-    online.load_cache()
+    start = val_end - (60 * 100 * minutes)
+    end = val_end - (60 * minutes)
+
+    online.load_val_cache(
+                    val_keys = currency_list,                  
+                    start = start,
+                    end = end)
     return online
 
 def test_model(model, set_key, provider, step, verbose = True):
@@ -83,12 +87,12 @@ def test_model(model, set_key, provider, step, verbose = True):
     x, y, closed_prices = get_sequencial_data(valX, valY, step)
     
     #print(len(x))
-    preds = model.predict(x)
+    #preds = model.predict(x)
 
-    recall = recall_score(y, preds)
-    precision = precision_score(y, preds)
-    f1 = f1_score(y, preds)
-    accuracy = accuracy_score(y, preds)
+    #recall = recall_score(y, preds)
+    #precision = precision_score(y, preds)
+    #f1 = f1_score(y, preds)
+    #accuracy = accuracy_score(y, preds)
 
     back = BackTest(value = 100, 
                     verbose = verbose, 
@@ -174,25 +178,30 @@ def get_best_model(currency_list, result_paths, timestamp, minutes_list, winner_
 
     print(f"Selected: {len(scoreboard)}")
 
-    scoreboard.sort(key=order, reverse = True)
+    scoreboard.sort(key=order, reverse = False)
 
     filtered = []
 
     for score in scoreboard:
         profit = score['profit']
         backs = score['backs']
-        #print(f"Current profit: {profit}")
-        #print(result)
-        #for back in backs:
+        result = score['result']
+        print(f"Current profit: {profit}")
+        print(result['model'])
+        for key in backs:
+            back = backs[key]
             #backs[back].report()
-        #    print(f"{back} -> {backs[back].get_profit()}")
+            trades = f"{back.positive_trades} - {back.negative_trades}"
+            print(f"{key} -> {back.get_profit()} | {trades}")
         
-        #print()
+        print()
         filtered.append(profit)
     
-    winner = scoreboard[0]['result']
+    best = scoreboard[-1]
+
+    winner = best['result']
     print(f"Winner for {currency_list}")
-    backs = scoreboard[0]['backs']
+    backs = best['backs']
     for back in backs:
         backs[back].report()
     print_result(winner)

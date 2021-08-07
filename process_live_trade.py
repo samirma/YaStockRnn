@@ -14,33 +14,6 @@ from model_winner_select import *
 from datetime import datetime
 import argparse
 
-def load_online(minutes, window, val_end, currency = "btcusd"):
-    tec = TecAn(windows = window, windows_limit = 100)
-    source_data_generator = SourceDataGenerator(tec = tec)
-
-
-    online = OnLineDataProvider(
-                 source_data_generator = source_data_generator,
-                 minutes = minutes,
-                 train_keys = [],
-                 train_limit = 40,
-                 val_limit = 1000,
-                 val_keys = [currency],
-                 val_start = val_end - (60000 * 60),
-                 val_end = val_end,
-                 train_start_list = []
-    )
-
-    start = val_end - (60 * 1000 * minutes)
-    end = val_end - (60 * minutes)
-
-    online.load_val_cache(
-                    val_keys = [currency],                  
-                    start = start,
-                    end = end)
-    return online
-
-
 def get_agent(minutes, win, step, model, hot_load = True, currency = "btcusd"):
     
     back = BackTest(value = 100,
@@ -48,8 +21,8 @@ def get_agent(minutes, win, step, model, hot_load = True, currency = "btcusd"):
                         pending_sell_steps = step, 
                         sell_on_profit = True)
 
-    request_sell = lambda price: back.request_sell(price)
-    request_buy = lambda price: back.request_buy(price)
+    request_sell = lambda bid, ask: back.request_sell(bid = bid, ask = ask)
+    request_buy = lambda bid, ask: back.request_buy(bid = bid, ask = ask)
     on_state = lambda timestamp, price: back.on_state(timestamp, price)
 
     stock = StockAgent(
@@ -79,14 +52,15 @@ def get_agent(minutes, win, step, model, hot_load = True, currency = "btcusd"):
     if (hot_load):
         timestamp = int(datetime.timestamp((datetime.now())))
         online = load_online(minutes = minutes, 
-                            currency= currency,
-                             window = win, 
+                            currency_list = [currency],
+                            window = win, 
                             val_end = timestamp)
         valX, valY = online.load_val_data(currency)
         for yy in valY:
             agent.taProc.add_tacs_realtime([], yy, 0.0, agent.tec)
         eval_back, metrics = eval_step(model, currency, step, online)
         print("###### Past report ######")
+        print(f"Metric: {metrics}")
         eval_back.report()
         print("###### - ######")
 
@@ -183,11 +157,14 @@ if __name__ == '__main__':
     parser.add_argument('--r', dest="result_path", action="store")
     parser.add_argument('--c', dest="currency", action="store", default="btcusd")
 
-    parser.add_argument('--p', dest="simulate_on_price", default=True, action=argparse.BooleanOptionalAction)
+    parser.add_argument('--p', dest="simulate_on_price", default=False, action=argparse.BooleanOptionalAction)
 
     add_arguments_winner(parser)
 
     args = parser.parse_args()
+
+    print(f"simulate_on_price --p: {args.simulate_on_price}")
+    print(f"currency --c: {args.currency}")
 
     if (args.result_paths_list != None and len(args.result_paths_list) > 0):
         print(f"minutes: {args.minutes_list}")
@@ -206,6 +183,8 @@ if __name__ == '__main__':
         print("Winner found")
         start_process_by_result(winner, args.currency, args.simulate_on_price)
     elif (args.results_path != None and args.index != None):
+        print(f"result_path --r: {args.result_path}")
+        print(f"index --i: {args.index}")
         start_process_index(results_path = args.results_path, index = args.index, currency = args.currency, simulate_on_price = args.simulate_on_price)
     else:
         start_process_path(args.result_path, currency = args.currency, simulate_on_price = args.simulate_on_price)

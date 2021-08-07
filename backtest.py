@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-from sklearn.utils import shuffle
 from data_util import *
 from stock_agent import *
 import tensorflow as tf
@@ -77,10 +76,10 @@ def get_sequencial_data(trainX, trainY, step):
     return x, y, closed_prices
 
 
-def backtest_model(model, x, closed_prices, back):
+def backtest_model(model, x, closed_prices, back: BackTest):
     limit = len(x)
-    if (limit > 3000):
-        limit = 3000
+    #if (limit > 3000):
+    #    limit = 3000
     for idx in range(limit):
         xx = np.array([x[idx]])
         yy = model.predict(xx)[0]
@@ -88,9 +87,9 @@ def backtest_model(model, x, closed_prices, back):
         #print(f'{idx} {yy} {price}')
         back.on_state(0, price)
         if(yy == 1):
-            back.request_buy(price)
+            back.request_buy(price, price)
         else:
-            back.request_sell(price)
+            back.request_sell(price, price)
     
     #print(f"Closing backtest_model {back.current}")
     back.sell(price)
@@ -99,7 +98,7 @@ def backtest_model(model, x, closed_prices, back):
     return back
 
 
-def backtest_baseline(x, y, closed_prices, step, back):
+def backtest_baseline(x, y, closed_prices, step, back: BackTest):
     limit = len(x)
     if (limit > 3000):
         limit = 3000
@@ -110,9 +109,9 @@ def backtest_baseline(x, y, closed_prices, step, back):
         back.on_state(0, price)
         #print(yy)
         if(yy == 1):
-            back.request_buy(price)
+            back.request_buy(price, price)
         else:
-            back.request_sell(price)
+            back.request_sell(price, price)
             
     back.request_sell(price)
     

@@ -372,7 +372,7 @@ if __name__ == '__main__':
 
     windows = [5, 10, 20, 30, 40]
 
-    minutes = [15, 5, 3]
+    minutes = [30, 15, 5, 3]
 
     models_index_list = [i for i in range(len(get_classifiers()))]
 
