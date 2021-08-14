@@ -8,6 +8,7 @@ from stock_agent import *
 from backtest import *
 from bitstamp import *
 from model import *
+from providers import *
 
 from model_search import print_result
 
@@ -80,26 +81,6 @@ def load_online(minutes, window, val_end, currency_list = ["btcusd"]):
                     start = start,
                     end = end)
     return online
-
-def test_model(model, set_key, provider, step, verbose = True):
-    valX, valY = provider.load_val_data(set_key)
-
-    x, y, closed_prices = get_sequencial_data(valX, valY, step)
-    
-    #print(len(x))
-    #preds = model.predict(x)
-
-    #recall = recall_score(y, preds)
-    #precision = precision_score(y, preds)
-    #f1 = f1_score(y, preds)
-    #accuracy = accuracy_score(y, preds)
-
-    back = BackTest(value = 100, 
-                    verbose = verbose, 
-                    sell_on_profit = True,
-                    pending_sell_steps = step)
-    back = backtest_model(model, x, closed_prices, back)
-    return back
 
 def load_results_path(results_path):
     try:

@@ -8,6 +8,7 @@ from stock_agent import *
 from backtest import *
 from bitstamp import *
 from model import *
+from providers import *
 
 
 import numpy as np
@@ -211,7 +212,7 @@ def test_models(provider, get_all_models_factory, steps = [1]):
     for step_idx in score_board_by_step:
         step_board = score_board_by_step[step_idx]
         for result in step_board:
-            if (result['profit'] > 102):
+            if (result['profit'] > 101):
                 model_rank.append(result)
             
     model_rank.sort(key=myFunc, reverse = True)

@@ -86,11 +86,10 @@ def backtest_model(model, x, closed_prices, back: BackTest):
         yy = model.predict(xx)[0]
         price = closed_prices[idx]
         #print(f'{idx} {yy} {price}')
-        back.on_state(0, price)
         if(yy == 1):
-            back.request_buy(price, price)
+            back.on_up(price, price)
         else:
-            back.request_sell(price, price)
+            back.on_down(price, price)
     
     #print(f"Closing backtest_model {back.current}")
     back.sell(price)
@@ -110,14 +109,33 @@ def backtest_baseline(x, y, closed_prices, step, back: BackTest):
         back.on_state(0, price)
         #print(yy)
         if(yy == 1):
-            back.request_buy(price, price)
+            back.on_up(price, price)
         else:
-            back.request_sell(price, price)
+            back.on_down(price, price)
             
-    back.request_sell(price, price)
+    back.on_down(price, price)
     
     return back
 
+def test_model(model, set_key, provider, step, verbose = True):
+    valX, valY = provider.load_val_data(set_key)
+
+    x, y, closed_prices = get_sequencial_data(valX, valY, step)
+    
+    #print(len(x))
+    #preds = model.predict(x)
+
+    #recall = recall_score(y, preds)
+    #precision = precision_score(y, preds)
+    #f1 = f1_score(y, preds)
+    #accuracy = accuracy_score(y, preds)
+
+    back = BackTest(value = 100, 
+                    verbose = verbose, 
+                    sell_on_profit = True,
+                    pending_sell_steps = step)
+    back = backtest_model(model, x, closed_prices, back)
+    return back
     
 def train_by_step(model, step, provider):
     trainX_raw, trainY_raw = provider.load_train_data()
@@ -148,195 +166,4 @@ def eval_step(model, train_set, step, provider, verbose = False):
     back = backtest_model(model, x, closed_prices, back)
     
     return back, metrics
-
-
-
-class MockModel():
     
-    def __init__(self, 
-                 model
-                ):
-        self.model = model
-        self.normalizer = tf.keras.layers.experimental.preprocessing.Normalization()
-        
-        
-    def fit(self, x, y):
-        self.normalizer.adapt(x)
-        norm_x = self.normalizer(x).numpy()
-        self.model.fit(norm_x, y)
-        
-    def predict(self, x):
-        norm_x = self.normalizer(x).numpy()
-        return self.model.predict(norm_x)
-    
-    def __str__(self):
-        return "MockModel ( %s )" % (self.model)
-    
-    def __getitem__(self, i):
-        return f"Value {i}"
-        
-
-
-class CoPilotModel():
-    
-    def __init__(self, 
-                 model
-                ):
-        self.model = model
-        
-        
-    def fit(self, x, y):
-        self.model.fit(norm_x, y)
-        
-    def predict(self, x):
-        return self.model.predict(x)
-    
-    def __str__(self):
-        return "MockCoPilotModel ( %s )" % (self.model)
-    
-    def __getitem__(self, i):
-        return f"Value {i}"
-        
-        
-class MockCoPilotModel():
-    
-    def __init__(self, 
-                 model,
-                 coModel
-                ):
-        self.model = model
-        self.coModel = coModel
-        
-    def compare(self, val, val2):
-        return np.where(np.array(val) == np.array(val2), 1, 0)
-        
-    def fit(self, x, y):
-        self.model.fit(x, y)
-        
-        preds = self.model.predict(x)
-        
-        coX = []
-        coY = []
-        yy = []
-        
-        for idx in range(len(x)):
-            if (preds[idx] == 1):
-                coX.append(x[idx])
-                coY.append(preds[idx])
-                yy.append(y[idx])
-        
-        finalCoY = self.compare(yy, coY)
-        
-        self.coModel.fit(coX, finalCoY)
-        
-    def predict(self, x):
-        y = self.model.predict(x)
-        
-        if (y[0] == 1):
-            return self.compare(y, self.coModel.predict(x))
-        
-        return self.model.predict(x)
-    
-    def __str__(self):
-        return "MockCoPilotModel ( %s )" % (self.model)
-        
-    def __getitem__(self, i):
-        return f"Value {i}"
-
-
-    
-class LocalDataProvider():
-    
-    def __init__(self, 
-                train_keys,
-                 val_keys
-                ):
-        self.train_keys = train_keys
-        self.val_keys = val_keys
-        self.train_data = []
-        self.vals = {}
-    
-    def load_train_data(self):
-        return load_data("simple_full_", "train", path)
-    
-    def load_val_data(self, val):
-        return load_data(f"simple_{val}", "train", path)
-
-
-class OnLineDataProvider():
-    #https://www.unixtimestamp.com/
-    def __init__(self,
-                 source_data_generator :SourceDataGenerator,
-                 minutes,
-                 val_start,
-                 val_end,
-                 train_keys,
-                 val_keys,
-                 train_start_list,
-                 train_limit = 100,
-                 val_limit = 1000,
-                ):
-        #self.train_keys = ["ltcbtc", "btceur", "btcusd", "bchusd", "ethusd", "xrpusd"]
-        self.train_keys = train_keys
-        #self.train_keys = ["ltcbtc", "btceur", "linkusd", "xrpusd"]
-        self.val_keys = val_keys
-        self.train_data = []
-        self.vals = {}
-        self.minutes = minutes
-        self.train_limit = train_limit
-        
-        self.val_limit = val_limit
-        self.val_start = val_start
-        self.val_end = val_end
-        
-        self.train_start_list = train_start_list
-        self.source_data_generator = source_data_generator
-        self.steps = (minutes * 60)
-        self.resample = f'{minutes}Min'
-    
-    def load_cache(self):
-        self.load_train_cache()
-        self.load_val_cache(self.val_keys, self.val_start, self.val_end)
-
-    def load_train_cache(self):
-        sets = []
-
-        def load_from_time(time): 
-            for curr in self.train_keys:
-                x, closed_prices = self.source_data_generator.get_full_database_online(curr, 
-                                                                                resample = self.resample, 
-                                                                                limit = self.train_limit,
-                                                                                step = self.steps,
-                                                                                start=time)
-                sets.append((x, closed_prices))
-
-        for start_time in self.train_start_list:
-            load_from_time(start_time)
-
-        if (len(sets)>0):
-            self.train_data = self.source_data_generator.conc_simple_sets(sets)
-            
-    def load_val_cache(self, val_keys, start, end):
-
-        for key in val_keys:
-            x, closed_prices = self.source_data_generator.get_full_database_online_period(key, 
-                                                                            resample = self.resample,
-                                                                            step = self.steps,
-                                                                            start=start,
-                                                                            end=end
-                                                                           )
-            self.vals[key] = (x, closed_prices)
-            
-    def load_train_data(self):
-        return self.train_data
-    
-    def load_val_data(self, val):
-        return self.vals[val]
-    
-    def report(self):
-        print(f"Total train set {len(self.train_data[0])}")
-        for key in self.val_keys:
-            print(f"Total val {key} set {len(self.vals[key][0])}")
-
-    def __str__(self):
-        return f"OnLineDataProvider ( val_keys = {self.val_keys} | minutes = {self.minutes})"

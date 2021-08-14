@@ -87,9 +87,9 @@ class DataAgent():
         timestamp = pd.to_datetime(timestamp, unit='s')
         self.list.append([timestamp, price])
         
-        if (len(self.list) > self.raw_limit):
-            self.list.pop(0)
-        
+        #if (len(self.list) > self.raw_limit):
+        #    self.list.pop(0)
+
         DATE = 'Date'
         df = pd.DataFrame(self.list, columns = [DATE, CLOSE])
         df = df.set_index(pd.DatetimeIndex(df[DATE]))
@@ -118,15 +118,16 @@ class DataAgent():
         
         self.on_new_data_count = self.on_new_data_count + 1
         
-        self.on_new_price(price)
+        self.on_new_price(price, amount)
         
         self.ohlc = ohlc
         
 
-    def on_new_price(self, price):
+    def on_new_price(self, price, amount):
+        #print(f"------- {price}")
         self.on_closed_price(price)
         
-        x = self.taProc.add_tacs_realtime([], price, 0.0, self.tec)
+        x = self.taProc.add_tacs_realtime([], price, amount, self.tec)
         self.on_new_data(x)
         
         

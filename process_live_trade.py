@@ -29,25 +29,23 @@ def get_agent(minutes,
                         pending_sell_steps = step, 
                         sell_on_profit = True)
 
-    request_sell = lambda bid, ask: back.request_sell(bid = bid, ask = ask)
-    request_buy = lambda bid, ask: back.request_buy(bid = bid, ask = ask)
-    on_state = lambda timestamp, price: back.on_state(timestamp, price)
+    request_sell = lambda bid, ask: back.on_down(bid = bid, ask = ask)
+    request_buy = lambda bid, ask: back.on_up(bid = bid, ask = ask)
 
-    stock = ModelAgent(
+    model_agent = ModelAgent(
         model = model,
-        request_sell = request_sell,
-        request_buy = request_buy,
-        on_state = on_state,
+        on_down = request_sell,
+        on_up = request_buy,
         verbose = True
     )
 
-    stock.simulate_on_price = simulate_on_price
+    model_agent.simulate_on_price = simulate_on_price
 
     on_new_data = lambda x: print(x)
-    on_new_data = lambda x: stock.on_x(x)
+    on_new_data = lambda x: model_agent.on_x(x)
 
     on_state = lambda timestamp, price, buy, sell: print("{} {} {} {}".format(timestamp, price, buy, sell))
-    on_state = lambda timestamp, price, buy, sell: stock.on_new_state(timestamp, price, buy, sell)
+    on_state = lambda timestamp, price, buy, sell: model_agent.on_new_state(timestamp, price, buy, sell)
 
     agent = DataAgent(
         taProc = TacProcess(), 
@@ -72,7 +70,7 @@ def get_agent(minutes,
         eval_back.report()
         print("###### - ######")
 
-    return agent, back, stock
+    return agent, back, model_agent
 
 
 raw_data_live = []
