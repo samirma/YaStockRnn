@@ -52,7 +52,7 @@ import argparse
 
 def order(e):
     return e['profit']
-    #return e['models_profit_metric']['btcusd']
+    #return e['result']['profit']
 
 
 def load_online(minutes, window, val_end, currency_list = ["btcusd"]):
@@ -182,17 +182,17 @@ def get_best_model(currency_list, result_paths, timestamp, minutes_list, winner_
 
     filtered = []
 
-    for score in scoreboard:
+    for score in scoreboard[-3:]:
         profit = score['profit']
         backs = score['backs']
         result = score['result']
-        print(f"Current profit: {profit}")
         print(result['model'])
         for key in backs:
             back = backs[key]
             #backs[back].report()
             trades = f"{back.positive_trades} - {back.negative_trades}"
-            print(f"{key} -> {back.get_profit()} | {trades}")
+            print(f"{key} -> {back.current} | {trades}")
+            print(f"{result['models_score'][key]}")
         
         print()
         filtered.append(profit)

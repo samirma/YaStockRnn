@@ -64,8 +64,7 @@ class BackTest():
         if (self.is_bought()):
             positive, profit = self.is_profit(bid)
             if (positive):
-                if (self.verbose):
-                    print(f"Profit detected price:{self.price}  bid:{bid} ask:{ask}")
+                self.log(f"Profit detected price:{self.price}  bid:{bid} ask:{ask}")
                 self.sell(bid)
         else:
             self.buy(ask)
@@ -91,8 +90,7 @@ class BackTest():
         self.current = self.current - self.value
         self.holding = self.value / ask
         self.buy_price = ask
-        if (self.verbose):
-            print(f'{self.timestamp} Buy ({self.price}): ask: {ask}')
+        self.log(f'Buy ({self.price}): ask: {ask}')
 
     def is_profit(self, bid):
         profit = (bid - self.buy_price) * self.holding
@@ -106,22 +104,24 @@ class BackTest():
 
         if (positive):
             self.positive_trades += 1
+            result = f"PROFIT {profit}"
         else:
             self.negative_trades += 1
+            result = f"LOSS {profit}"
         
-        if (self.verbose):
-            if (not positive):
-                print(f'#### LOSSSS: {profit}')
-            print(f'{self.timestamp} Sell ({self.price}) profit: {profit} total: {self.current}')
+        self.log(f'SOLD > ({self.price}) Result: {result} total: {self.current}')
         self.holding = 0
         self.buy_price = 0
 
+    def log(self, message):
+        if (self.verbose):
+            print(f'{dt.datetime.now()} BackTest: {self.timestamp} {message}')
     
     def __str__(self) -> str:
         return f"BackTest (pending_sell_steps={self.pending_sell_steps} sell_on_profit={self.sell_on_profit}  value={self.value}"
             
 
-class StockAgent():
+class ModelAgent():
     
     def __init__(self, model = [],
                 request_sell = lambda bid, ask: bid,
@@ -174,28 +174,29 @@ class StockAgent():
     def buy(self):
 
         if (self.simulate_on_price):
-            self.log_action(f'BUY on current price: {self.price}')
+            self.log_action(f'UP')
             self.request_buy(ask = self.price, bid = self.price)
         else:
-            self.log_action(f'BUY on ask: {self.best_ask}')
+            self.log_action(f'UP on ask: {self.best_ask}')
             self.request_buy(ask = self.best_ask, bid = self.best_bid)
         
     def sell(self):
         if (self.simulate_on_price):
-            self.log_action(f'SELL on current price: {self.price}')
+            self.log_action(f'DOWN')
             self.request_sell(ask = self.price, bid = self.price)
         else: 
-            self.log_action(f'SELL on bid: {self.best_bid}')
+            self.log_action(f'DOWN on bid: {self.best_bid}')
             self.request_sell(ask = self.best_ask, bid = self.best_bid)
 
     def log_action(self, action):
         self.last_action["time"] = dt.datetime.now()
         self.last_action["action"] = action
+        stock_date = pd.to_datetime(self.timestamp, unit='s')
         if (self.verbose):
-            print(self.get_last_action())
+            print(f"{dt.datetime.now()} ModelAgent({self.price}): {stock_date}({self.timestamp}) {self.get_last_action()}")
 
     def get_last_action(self):
-        return f"{self.last_action['time']} - {self.last_action['action']}"
+        return f"{self.last_action['action']}"
 
 
 def series_to_supervised(data, n_in=2, n_out=1):

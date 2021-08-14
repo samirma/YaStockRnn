@@ -4,6 +4,7 @@ from data_util import *
 from stock_agent import *
 import tensorflow as tf
 from sklearn.metrics import *
+from sklearn.utils import shuffle
 
 def get_max_profit(x, y, closed_prices, step):
 
@@ -113,7 +114,7 @@ def backtest_baseline(x, y, closed_prices, step, back: BackTest):
         else:
             back.request_sell(price, price)
             
-    back.request_sell(price)
+    back.request_sell(price, price)
     
     return back
 

@@ -14,7 +14,15 @@ from model_winner_select import *
 from datetime import datetime
 import argparse
 
-def get_agent(minutes, win, step, model, hot_load = True, currency = "btcusd"):
+def get_agent(minutes, 
+                win, 
+                step,
+                model,
+                simulate_on_price = False,
+                hot_load = True, 
+                currency = "btcusd",
+                timestamp = int(datetime.timestamp((datetime.now())))
+                ):
     
     back = BackTest(value = 100,
                         verbose = True,
@@ -25,7 +33,7 @@ def get_agent(minutes, win, step, model, hot_load = True, currency = "btcusd"):
     request_buy = lambda bid, ask: back.request_buy(bid = bid, ask = ask)
     on_state = lambda timestamp, price: back.on_state(timestamp, price)
 
-    stock = StockAgent(
+    stock = ModelAgent(
         model = model,
         request_sell = request_sell,
         request_buy = request_buy,
@@ -33,6 +41,7 @@ def get_agent(minutes, win, step, model, hot_load = True, currency = "btcusd"):
         verbose = True
     )
 
+    stock.simulate_on_price = simulate_on_price
 
     on_new_data = lambda x: print(x)
     on_new_data = lambda x: stock.on_x(x)
@@ -50,7 +59,6 @@ def get_agent(minutes, win, step, model, hot_load = True, currency = "btcusd"):
     )
     
     if (hot_load):
-        timestamp = int(datetime.timestamp((datetime.now())))
         online = load_online(minutes = minutes, 
                             currency_list = [currency],
                             window = win, 
@@ -73,7 +81,7 @@ raw_data_live = []
 class RawStateDownloader(LiveBitstamp):
     
     def __init__(self, agent : DataAgent, 
-                        stock : StockAgent, 
+                        stock : ModelAgent, 
                         back : BackTest, 
                         on_raw_data = lambda raw: print(raw), 
                         verbose = False):
@@ -100,21 +108,21 @@ class RawStateDownloader(LiveBitstamp):
             #print(f'{datetime.now()}: {self.agent.on_new_data_count} {self.stock.get_last_action()} | {self.back.get_profit()}', end='\r')
         
 
-def start_process_path(result_path, currency, simulate_on_price):
+def start_process_path(result_path, currency, simulate_on_price, hot_load):
 
     result = load(result_path) 
 
-    start_process_by_result(result, currency, simulate_on_price)
+    start_process_by_result(result, currency, simulate_on_price, hot_load)
 
-def start_process_index(results_path, index, currency, simulate_on_price):
+def start_process_index(results_path, index, currency, simulate_on_price, hot_load):
     
     result = load(results_path)
 
     print(f"Total: {len(result)}")
 
-    start_process_by_result(result[index], currency, simulate_on_price)
+    start_process_by_result(result[index], currency, simulate_on_price, hot_load)
 
-def start_process_by_result(result, currency, simulate_on_price):
+def start_process_by_result(result, currency, simulate_on_price, hot_load):
     model = result['model']
     window = result['window']
     minutes = result['minutes']
@@ -128,10 +136,9 @@ def start_process_by_result(result, currency, simulate_on_price):
                                     win = window,
                                     step = step,
                                     currency = currency,
-                                    hot_load = True,
-                                    model = model)
-
-    stock.simulate_on_price = simulate_on_price
+                                    hot_load = hot_load,
+                                    model = model,
+                                    simulate_on_price = simulate_on_price)
 
     on_raw_data = lambda raw: agent.on_new_raw_data(raw)
 
@@ -146,7 +153,9 @@ def start_process_by_result(result, currency, simulate_on_price):
 
     bt = Bitstamp(live, currency = currency)
 
-    bt.connect()
+    while (True):
+        bt.connect()
+        print("reconnectiong")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -159,12 +168,15 @@ if __name__ == '__main__':
 
     parser.add_argument('--p', dest="simulate_on_price", default=False, action=argparse.BooleanOptionalAction)
 
+    parser.add_argument('--hot', dest="hot_load", default=True, action=argparse.BooleanOptionalAction)
+
     add_arguments_winner(parser)
 
     args = parser.parse_args()
 
     print(f"simulate_on_price --p: {args.simulate_on_price}")
     print(f"currency --c: {args.currency}")
+    print(f"hot_load --hot: {args.hot_load}")
 
     if (args.result_paths_list != None and len(args.result_paths_list) > 0):
         print(f"minutes: {args.minutes_list}")
@@ -181,7 +193,7 @@ if __name__ == '__main__':
             winner_path = None
         )
         print("Winner found")
-        start_process_by_result(winner, args.currency, args.simulate_on_price)
+        start_process_by_result(winner, args.currency, args.simulate_on_price, args.hot_load)
     elif (args.results_path != None and args.index != None):
         print(f"result_path --r: {args.result_path}")
         print(f"index --i: {args.index}")

@@ -24,6 +24,7 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.linear_model import LogisticRegression
 from sklearn.utils.validation import check_is_fitted
+from sklearn.ensemble import ExtraTreesClassifier
 
 from joblib import dump, load
 from sklearn.model_selection import train_test_split
@@ -38,6 +39,8 @@ from sklearn.metrics import *
 from sklearn.feature_selection import SelectFromModel
 from sklearn.svm import LinearSVC
 from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import RobustScaler, StandardScaler
+from tpot.builtins import StackingEstimator
 
 from sklearn.metrics import confusion_matrix
 from sklearn.pipeline import Pipeline
@@ -94,23 +97,25 @@ def get_classifiers():
         #                            solver='lbfgs', alpha=1, random_state=1, max_iter=20000,
         #                            early_stopping=True)
         #                        ),
+
+        lambda : ExtraTreesClassifier(bootstrap=False, criterion="gini", max_features=0.9500000000000001, min_samples_leaf=10, min_samples_split=3, n_estimators=100),
         
         lambda : MLPClassifier(alpha=1, random_state=1, max_iter=20000, early_stopping=True),
         
-        lambda : xgb.XGBClassifier(random_state=1,
-                                   objective = "binary:logistic",
-                                   eval_metric='mlogloss',
-                                   learning_rate=0.01),
+        lambda : xgb.XGBClassifier(random_state=42),
         
         #lambda : GaussianNB(),
         lambda : QuadraticDiscriminantAnalysis(),
-        lambda : AdaBoostClassifier(random_state = 42),
+        #lambda : AdaBoostClassifier(random_state = 42),
         
         lambda : TabNetClassifierEarly(verbose=0),
         
-        #lambda : KNeighborsClassifier(3),
-        #lambda : GaussianProcessClassifier(1.0 * RBF(1.0)),
-        
+        lambda : make_pipeline(
+                        RobustScaler(),
+                        StandardScaler(),
+                        StackingEstimator(estimator=ExtraTreesClassifier(bootstrap=False, criterion="gini", max_features=0.9500000000000001, min_samples_leaf=4, min_samples_split=4, n_estimators=100)),
+                        KNeighborsClassifier(n_neighbors=56, p=2, weights="distance")
+                    ),
         
         lambda : DecisionTreeClassifier(random_state = 42),
         #lambda : RandomForestClassifier(max_depth=50, n_estimators=100, max_features=1),
@@ -120,9 +125,13 @@ def get_classifiers():
     ]
     
     def rand():
-        ##print("rand created")
-        param = {'criterion': 'entropy', 'max_depth': 100, 'n_estimators': 30, 'random_state': 42}
-        return RandomForestClassifier(**param)
+        return RandomForestClassifier(bootstrap=False, 
+                                        criterion="entropy",
+                                        random_state = 42,
+                                        max_features=0.1, 
+                                        min_samples_leaf=1, 
+                                        min_samples_split=2, 
+                                        n_estimators=100)
     
 
     #clss = []
@@ -130,26 +139,14 @@ def get_classifiers():
     #clss.append(lambda : make_pipeline(StandardScaler(),TabNetClassifierEarly(verbose=0)))
     return clss
 
-estimators = [
-                lambda : RFE(estimator=RandomForestClassifier(random_state=10), n_features_to_select=10),
-                lambda : RFE(estimator=DecisionTreeClassifier(random_state=10), n_features_to_select=8),
-                lambda : RFECV(estimator=DecisionTreeClassifier(random_state=10)),
-                lambda : RFECV(estimator=RandomForestClassifier(random_state=10))
-                ]
-
 estimators = []
 
-#for score in scoring:
-    
-estimators.append(lambda : RFECV(estimator=DecisionTreeClassifier(random_state=10),
-                    scoring='accuracy'))    
-estimators.append(lambda : RFECV(estimator=DecisionTreeClassifier(random_state=10),
-                    scoring='f1'))    
-estimators.append(lambda : RFECV(estimator=DecisionTreeClassifier(random_state=10),
-                    scoring='precision'))    
+def rfe_estimator():
+    return ExtraTreesClassifier(criterion="gini", max_features=0.3, n_estimators=100)
+                 
+estimators.append(lambda : RFE(estimator=rfe_estimator(), step=0.7500000000000001))
 
-estimators.append(lambda : RFECV(estimator=DecisionTreeClassifier(random_state=10),
-                    scoring='recall'))
+estimators.append(lambda : RFECV(estimator=rfe_estimator(), scoring='recall'))
 
 def add_normalizers(models, cls):
     models.append(make_pipeline(StandardScaler(),cls()))
@@ -214,7 +211,7 @@ def test_models(provider, get_all_models_factory, steps = [1]):
     for step_idx in score_board_by_step:
         step_board = score_board_by_step[step_idx]
         for result in step_board:
-            if (result['profit'] > 101):
+            if (result['profit'] > 102):
                 model_rank.append(result)
             
     model_rank.sort(key=myFunc, reverse = True)
@@ -289,21 +286,15 @@ def print_result(result):
 def start_model_search(minutes, windows, steps, models_index_list, model_path):
     
     best_results = process(minutes, windows, steps, models_index_list)
-    print(f"Results {len(best_results)}")
+    total_results_count = len(best_results)
+    print(f"Results {total_results_count}")
 
-    #try:
-    #    saved_models = load(model_path)
-    #except:
-    #    saved_models = []
-    saved_models = []
+    best_results.sort(key=order_by_proft, reverse = False)
 
-    for result in best_results:
-        saved_models.append(result)
+    saved_models = best_results[(-1 * int(total_results_count/2)):]
 
     print(f"Results saved {len(saved_models)}")
     dump(saved_models, model_path)
-
-    best_results.sort(key=order_by_proft, reverse = False)
 
     for best in best_results:
         if (best['profit'] < 100):
