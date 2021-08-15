@@ -84,7 +84,6 @@ class TecAn:
 
     #Process the raw state
     def add_ta(self, price, amount):
-               
         list = []
         self.data.append([price, amount])
         if (len(self.data) > self.windows_limit):
@@ -93,7 +92,7 @@ class TecAn:
         df = pd.DataFrame(self.data, columns = ['Close', 'Volume'])
         close = df['Close']
         volume = df['Volume']
-        #print("Received: {} {}".format(price, amount))
+        #print("Received: {} {}".format(type(price), type(amount)))
 
         self.generate_custom_ta(list, close, self.windows)
         

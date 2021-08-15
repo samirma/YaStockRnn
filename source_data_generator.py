@@ -1,4 +1,10 @@
 from data_util import *
+from data_agent import *
+from bitstamp import *
+
+import pandas as pd
+import numpy as np
+import datetime
 
 class SourceDataGenerator():
     def __init__(self,
@@ -141,25 +147,20 @@ class SourceDataGenerator():
         df = pd.DataFrame(parsed)
         return df
 
-    def generate_simple_data(self, parsed):
-        df = pd.DataFrame(parsed).copy()
-        CLOSE = 'close'
-        OPEN = 'open'
-        df[CLOSE] = df[CLOSE].astype(float)
-        df[OPEN] = df[OPEN].astype(float)
-        return df[CLOSE][:-1], df.shift(-1)[OPEN][:-1]
-
-
-    def process_online_data(self, result, resample, currency):
+    def process_online_data(self, result, resample, currency, verbose = False):
         init = datetime.datetime.fromtimestamp(int(result[0]['timestamp']))
         end = datetime.datetime.fromtimestamp(int(result[-1]['timestamp']))
-        print(f"Downloaded from {init} to {end} {result[-1]['open']}")
 
-        value, open_value  = self.generate_simple_data(result)
+        if (verbose):
+            print(f"Downloaded from {init} to {end} {result[-1]['open']}")
+
+        OPEN = 'open'
+        TIME = 'timestamp'
+        VOLUME = 'volume'
 
         final_x = []
-
-        closed_prices = []
+        prices = []
+        timestamps = []
 
         on_new_data = lambda x: final_x.append(x)
         on_closed_price = lambda price: price
@@ -171,35 +172,42 @@ class SourceDataGenerator():
             on_closed_price = on_closed_price
         )
 
-        print("Processing {} of {}".format(len(value), currency))
+        if (verbose):
+            print("Processing {} of {}".format(len(result), currency))
 
-        for idx in tqdm(range(len(value))):
-            x = float(value[idx])
-            closed_prices.append(open_value[idx])
-            agent.on_new_price(x, 0.0)
+        for data in tqdm(result):
+            price = float(data[OPEN])
+            volume = float(data[VOLUME])
+            timestamp = int(data[TIME])
+            prices.append(price)
+            timestamps.append(timestamp)
+            agent.on_new_price(timestamp, price, volume)
 
         #closes = pd.DataFrame(closed_prices, columns = ['Close'])
 
         #print(agent.ohlc)
 
-        return np.array(final_x), np.array(closed_prices)
+        return np.array(final_x), np.array(prices), np.array(timestamps)
 
-    def get_full_database_online(self, currency, resample, start=1619823600, end=-1, step=60, limit=10):
+    def get_full_database_online(self, currency, resample, start=1619823600, end=-1, step=60, limit=10, verbose = False):
 
         result = load_bitstamp_ohlc(currency, 
                                     start=start,
                                     end=end,
                                     step=step, 
-                                    limit=limit)
+                                    limit=limit,
+                                    verbose = verbose)
 
         return self.process_online_data(result, resample, currency)
 
-    def get_full_database_online_period(self, currency, resample, start, end, step=60, limit=1000):
+    def get_full_database_online_period(self, currency, resample, start, end, step=60, verbose = False):
     
         result = load_bitstamp_ohlc_by_period(currency, 
                                     start=start,
                                     end=end,
-                                    step=step)
+                                    step=step,
+                                    verbose = verbose
+                                    )
 
         return self.process_online_data(result, resample, currency)
 

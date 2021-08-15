@@ -10,8 +10,6 @@ import requests
 import uuid
 import sys
 import datetime
-import numpy as np
-import datetime
 from stock_agent import *
 from configparser import ConfigParser
 import uuid
@@ -199,16 +197,19 @@ class Bitstamp:
         }
         self.ws.send(json.dumps(payload))
         
-def load_bitstamp_ohlc_by_period(currency_pair, start, end, step, limit = 1000):
+def load_bitstamp_ohlc_by_period(currency_pair, start, end, step, limit = 1000, verbose = False):
     data = []
     page_start = start
     while (True):
         page = load_bitstamp_ohlc(currency_pair=currency_pair,
                                     start = page_start,
                                     step = step,
-                                    limit = limit
-        )
-        #print(page)
+                                    limit = limit,
+                                    verbose = verbose
+        )           
+        if (len(data) > 0):
+            if (data[-1] == page[0]):
+                data.pop(0)
         for item in page:
             data.append(item)
             timestamp = int(item['timestamp'])
@@ -220,7 +221,7 @@ def load_bitstamp_ohlc_by_period(currency_pair, start, end, step, limit = 1000):
         
         
     
-def load_bitstamp_ohlc(currency_pair, start=-1, end=-1, step=60, limit=5):
+def load_bitstamp_ohlc(currency_pair, start=-1, end=-1, step=60, limit=5, verbose = False):
     # params:
     #   currency_pair: currency pair on which to trigger the request
     #   start: unix timestamp from when OHLC data will be started
@@ -261,7 +262,10 @@ def load_bitstamp_ohlc(currency_pair, start=-1, end=-1, step=60, limit=5):
     for key in payload:
         value = payload[key]
         param = f"{param}&{key}={value}" 
-    print(f"{route}?{param}")
+    
+    if(verbose):
+        print(f"{route}?{param}")
+    
     response = requests.get(route, params=payload)
     ohlc = response.json()
     

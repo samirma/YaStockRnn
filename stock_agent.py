@@ -116,7 +116,7 @@ class BackTest():
             print(f'{dt.datetime.now()} BackTest: {message}')
     
     def __str__(self) -> str:
-        return f"BackTest (pending_sell_steps={self.pending_sell_steps} sell_on_profit={self.sell_on_profit}  value={self.value})"
+        return f"BackTest (pending_sell_steps={self.pending_sell_steps} sell_on_profit={self.sell_on_profit} value={self.value})"
             
 
 class ModelAgent():
@@ -126,6 +126,7 @@ class ModelAgent():
                 on_up = lambda bid, ask: ask,
                 verbose = False,
                 simulate_on_price = True,
+                save_history = False
                 ):
         self.model = model
         self.on_up = on_up
@@ -137,19 +138,15 @@ class ModelAgent():
         self.verbose = verbose
         self.simulate_on_price = simulate_on_price
         self.last_action = {}
-        self.cache = []
         self.last_action["time"] = ''
         self.last_action["action"] = ''
+        self.history = []
+        self.save_history = save_history
         
     def on_x(self, x):
-        #self.log_action("on_x")
-        #if (len(self.cache) > 10):
-        #    self.cache.pop(0)
-        #self.cache.append(x)
-        #xx = series_to_supervised(self.cache)
-        #print(x)
         y = self.model.predict(np.array([x]))
-        self.on_predicted(y[0])
+        return self.on_predicted(y[0])
+            
         
     def on_new_state(self, timestamp, price, bid, ask):
         self.best_ask = float(ask[-1][0])
@@ -159,11 +156,12 @@ class ModelAgent():
         #print(self.best_buy)
         
     def on_predicted(self, y):
-        #print(y)
-        if (y > 0.5):
+        is_up = y > 0.5
+        if (is_up):
             self.up()
         else:
             self.down()
+        return is_up
         
     def up(self):
         if (self.simulate_on_price):

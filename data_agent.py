@@ -1,12 +1,10 @@
 import pandas as pd
+from pandas._libs.tslibs import timestamps
 from ta.trend import *
 from ta.momentum import *
 from ta.volume import *
 from ta.volatility import *
 from ta import add_all_ta_features, add_trend_ta, add_volume_ta, add_volatility_ta, add_momentum_ta, add_others_ta
-import matplotlib.pyplot as plt
-import multiprocessing
-import threading
 import numpy as np
 from tec_an import TecAn
 
@@ -48,7 +46,8 @@ class DataAgent():
                  on_new_data = lambda x: print("{}".format(x)),
                  on_state = lambda timestamp, price, bid, ask: price,
                  on_closed_price = lambda price: price,
-                 verbose = False
+                 verbose = False,
+                 save_history = False,
                  ):
         self.taProc = taProc
         self.tec = tec
@@ -64,18 +63,25 @@ class DataAgent():
         self.on_closed_price = on_closed_price
         self.on_new_data_count = 0
         self.verbose = verbose
-        print("Resample {} - {}".format(self.resample, self.tec))
+        self.history = []
+        self.save_history = save_history
+        if (self.verbose):
+            print("DataAgent (resample: {self.resample} tec: {self.tec})")
         
     def on_new_data(self, x):
         self.on_new_data(x)
-        
         
     def on_new_raw_data(self, raw):
         price = raw[PRICE_KEY]
         amount = raw[AMOUNT_KEY]
         timestamp = raw[TIMESTAMP_KEY]
+        bids = raw[BIDS_KEY]
+        asks = raw[ASKS_KEY]
+        self.process_data(price, amount, timestamp, bids, asks)
         
-        self.on_state(timestamp, price, raw[BIDS_KEY], raw[ASKS_KEY])
+    def process_data(self, price, amount, timestamp, bids, asks):
+        
+        self.on_state(timestamp, price, bids, asks)
 
         # Only consider when prices changes
         if (self.last_price == price and self.last_amount == amount):
@@ -84,8 +90,8 @@ class DataAgent():
         self.last_price = price 
         self.last_amount = amount
         
-        timestamp = pd.to_datetime(timestamp, unit='s')
-        self.list.append([timestamp, price])
+        timestamp_pd = pd.to_datetime(timestamp, unit='s')
+        self.list.append([timestamp_pd, price])
         
         #if (len(self.list) > self.raw_limit):
         #    self.list.pop(0)
@@ -118,16 +124,21 @@ class DataAgent():
         
         self.on_new_data_count = self.on_new_data_count + 1
         
-        self.on_new_price(price, amount)
+        self.on_new_price(timestamp, price, amount)
         
         self.ohlc = ohlc
-        
+    
+    def on_action(self, action):
+        if (self.save_history):
+            self.history.append(action)
 
-    def on_new_price(self, price, amount):
-        #print(f"------- {price}")
+    def on_new_price(self, timestamp, price, amount):
         self.on_closed_price(price)
-        
         x = self.taProc.add_tacs_realtime([], price, amount, self.tec)
-        self.on_new_data(x)
-        
-        
+        is_up = self.on_new_data(x)
+        action = (timestamp, price, x, is_up)
+        self.on_action(action)
+         
+    def report(self):
+        for data in self.history:
+            print(f"{data[0]} - {data[1]} - {data[3]}")

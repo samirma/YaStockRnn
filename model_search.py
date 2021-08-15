@@ -143,7 +143,7 @@ def get_classifiers():
 estimators = []
 
 def rfe_estimator():
-    return ExtraTreesClassifier(criterion="gini", max_features=0.3, n_estimators=100)
+    return ExtraTreesClassifier(criterion="gini", max_features=0.3, n_estimators=100, random_state = 42)
                  
 estimators.append(lambda : RFE(estimator=rfe_estimator(), step=0.7500000000000001))
 

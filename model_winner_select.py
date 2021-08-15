@@ -73,13 +73,14 @@ def load_online(minutes, window, val_end, currency_list = ["btcusd"]):
                  train_start_list = []
     )
 
-    start = val_end - (60 * 100 * minutes)
+    start = val_end - (60 * 500 * minutes)
     end = val_end - (60 * minutes)
 
     online.load_val_cache(
                     val_keys = currency_list,                  
                     start = start,
-                    end = end)
+                    end = end
+                    )
     return online
 
 def load_results_path(results_path):
@@ -157,7 +158,13 @@ def get_best_model(currency_list, result_paths, timestamp, minutes_list, winner_
 
     scoreboard = get_scorecoard(currency_list, all_models, timestamp, minutes_list)
 
-    print(f"Selected: {len(scoreboard)}")
+    selected_count = len(scoreboard)
+
+    if (selected_count == 0):
+        print(f"No viable models for currency_list: {currency_list}, result_paths: {result_paths}, timestamp: {timestamp}, minutes_list: {minutes_list}")
+        return
+
+    print(f"Selected: {selected_count}")
 
     scoreboard.sort(key=order, reverse = False)
 

@@ -29,7 +29,7 @@ def run_trial(model, provider, step):
     
     profits = []
     for train_set in provider.val_keys:
-        trainX_raw, trainY_raw = provider.load_val_data(train_set)
+        trainX_raw, trainY_raw, times = provider.load_val_data(train_set)
         x, y, closed_prices = get_sequencial_data(trainX_raw, trainY_raw, step)
         reference = get_max_profit(x, y, closed_prices, step)
 
@@ -106,7 +106,6 @@ def backtest_baseline(x, y, closed_prices, step, back: BackTest):
         yy = y[idx]
         price = closed_prices[idx]
         #print(f'{idx} {yy} {price}')
-        back.on_state(0, price)
         #print(yy)
         if(yy == 1):
             back.on_up(price, price)
@@ -118,7 +117,7 @@ def backtest_baseline(x, y, closed_prices, step, back: BackTest):
     return back
 
 def test_model(model, set_key, provider, step, verbose = True):
-    valX, valY = provider.load_val_data(set_key)
+    valX, valY, times = provider.load_val_data(set_key)
 
     x, y, closed_prices = get_sequencial_data(valX, valY, step)
     
@@ -145,18 +144,18 @@ def train_by_step(model, step, provider):
 
 def eval_step(model, train_set, step, provider, verbose = False):
 
-    valX, valY = provider.load_val_data(train_set)
+    valX, valY, times = provider.load_val_data(train_set)
     
     x, y, closed_prices = get_sequencial_data(valX, valY, step)
     
     preds = model.predict(x)
-
+    
     metrics = {}
     metrics["recall"] = recall_score(y, preds)
     metrics["precision"] = precision_score(y, preds)
     metrics["f1"] = f1_score(y, preds)
     metrics["accuracy"] = accuracy_score(y, preds)
-    metrics["roc_auc"] = roc_auc_score(y, preds)
+    #metrics["roc_auc"] = roc_auc_score(y, preds)
     
     back = BackTest(value = 100, 
                     verbose = verbose, 

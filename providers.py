@@ -15,10 +15,10 @@ class LocalDataProvider():
         self.path = path
     
     def load_train_data(self):
-        return load_data("simple_full_", "train", self.path)
+        return self.load_data("simple_full_", "train", self.path)
     
     def load_val_data(self, val):
-        return load_data(f"simple_{val}", "train", self.path)
+        return self.load_data(f"simple_{val}", "train", self.path)
 
 
 class OnLineDataProvider():
@@ -33,6 +33,7 @@ class OnLineDataProvider():
                  train_start_list,
                  train_limit = 100,
                  val_limit = 1000,
+                 verbose = True
                 ):
         #self.train_keys = ["ltcbtc", "btceur", "btcusd", "bchusd", "ethusd", "xrpusd"]
         self.train_keys = train_keys
@@ -46,7 +47,7 @@ class OnLineDataProvider():
         self.val_limit = val_limit
         self.val_start = val_start
         self.val_end = val_end
-        
+        self.verbose = verbose
         self.train_start_list = train_start_list
         self.source_data_generator = source_data_generator
         self.steps = (minutes * 60)
@@ -61,12 +62,15 @@ class OnLineDataProvider():
 
         def load_from_time(time): 
             for curr in self.train_keys:
-                x, closed_prices = self.source_data_generator.get_full_database_online(curr, 
+                x, prices, times = self.source_data_generator.get_full_database_online(curr, 
                                                                                 resample = self.resample, 
                                                                                 limit = self.train_limit,
                                                                                 step = self.steps,
-                                                                                start=time)
-                sets.append((x, closed_prices))
+                                                                                start=time,
+                                                                                verbose = self.verbose
+                                                                                )
+                to_be_removed = 100
+                sets.append((x[to_be_removed:], prices[to_be_removed:], times[to_be_removed:]))
 
         for start_time in self.train_start_list:
             load_from_time(start_time)
@@ -77,13 +81,16 @@ class OnLineDataProvider():
     def load_val_cache(self, val_keys, start, end):
 
         for key in val_keys:
-            x, closed_prices = self.source_data_generator.get_full_database_online_period(key, 
+            x, prices, times = self.source_data_generator.get_full_database_online_period(key, 
                                                                             resample = self.resample,
                                                                             step = self.steps,
                                                                             start=start,
-                                                                            end=end
+                                                                            end=end,
+                                                                            verbose = self.verbose
                                                                            )
-            self.vals[key] = (x, closed_prices)
+            #to_be_removed = 100
+            #self.vals[key] = (x[to_be_removed:], prices[to_be_removed:], times[to_be_removed:])
+            self.vals[key] = x, prices, times
             
     def load_train_data(self):
         return self.train_data
@@ -97,4 +104,7 @@ class OnLineDataProvider():
             print(f"Total val {key} set {len(self.vals[key][0])}")
 
     def __str__(self):
-        return f"OnLineDataProvider ( val_keys = {self.val_keys} | minutes = {self.minutes})"
+        resume = {}
+        for val in self.val_keys:
+            resume[val] = len(self.val_keys[val])
+        return f"OnLineDataProvider ( val_keys = {resume}, train_data = {self.train_data} , minutes = {self.minutes})"
