@@ -91,9 +91,7 @@ def backtest_model(model, x, closed_prices, back: BackTest):
         else:
             back.on_down(price, price)
     
-    #print(f"Closing backtest_model {back.current}")
-    back.sell(price)
-    #print(f"Closed backtest_model {back.current}")
+    back.on_down(price, price)
     
     return back
 

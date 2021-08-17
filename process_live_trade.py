@@ -14,6 +14,47 @@ from model_winner_select import *
 from datetime import datetime
 import argparse
 
+
+def add_hot_load(minutes, win, step, model, currency, timestamp, verbose, back, model_agent, agent):
+    model_agent.verbose = False
+    back.verbose = False
+    online = load_online(minutes = minutes, 
+                            currency_list = [currency],
+                            window = win, 
+                            val_end = timestamp)
+    x_list, price_list, time_list = online.load_val_data(currency)
+    def remove_extra(list):
+        limit = agent.tec.windows_limit
+        return list[-limit:]
+
+        #x_list = remove_extra(x_list)
+        #price_list = remove_extra(price_list)
+        #time_list = remove_extra(time_list)
+    timestamp_start = time_list[0]
+    timestamp_end = time_list[-1]
+    start = pd.to_datetime(timestamp_start, unit='s')
+    end = pd.to_datetime(timestamp_end, unit='s')
+    total = len(price_list)
+    for idx in range(total):
+        price = price_list[idx]
+        time = time_list[idx]
+        order = [[f"{price}", f"{price}"]]
+        amount = 0.0
+        agent.process_data(price, amount, time, order, order)
+    eval_back, metrics = eval_step(model, currency, step, online)
+    print(f"###### Past report({total}): {start}({timestamp_start}) - {end}({timestamp_end}) ######")
+    print(f"Metric: {metrics}")
+    eval_back.report()
+    print("###### - ######")
+    back.on_down(back.buy_price, back.buy_price)
+    back.report()
+    print("###### - ######")
+    back.reset()
+    model_agent.verbose = verbose
+    back.verbose = verbose
+
+
+
 def get_agent(minutes, 
                 win, 
                 step,
@@ -58,39 +99,16 @@ def get_agent(minutes,
     )
     
     if (hot_load):
-        model_agent.verbose = False
-        back.verbose = False
-        online = load_online(minutes = minutes, 
-                            currency_list = [currency],
-                            window = win, 
-                            val_end = timestamp)
-        x_list, price_list, time_list = online.load_val_data(currency)
-        def remove_extra(list):
-            limit = agent.tec.windows_limit
-            return list[-limit:]
-
-        #x_list = remove_extra(x_list)
-        #price_list = remove_extra(price_list)
-        #time_list = remove_extra(time_list)
-        timestamp_start = time_list[0]
-        timestamp_end = time_list[-1]
-        start = pd.to_datetime(timestamp_start, unit='s')
-        end = pd.to_datetime(timestamp_end, unit='s')
-        total = len(price_list)
-        for idx in range(total):
-            price = price_list[idx]
-            time = time_list[idx]
-            order = [[f"{price}", f"{price}"]]
-            amount = 0.0
-            agent.process_data(price, amount, time, order, order)
-        eval_back, metrics = eval_step(model, currency, step, online)
-        print(f"###### Past report({total}): {start}({timestamp_start}) - {end}({timestamp_end}) ######")
-        print(f"Metric: {metrics}")
-        eval_back.report()
-        print("###### - ######")
-        back.reset()
-        model_agent.verbose = verbose
-        back.verbose = verbose
+        add_hot_load(minutes, 
+        win, 
+        step, 
+        model, 
+        currency, 
+        timestamp, 
+        verbose, 
+        back, 
+        model_agent, 
+        agent)
 
     return agent, back, model_agent
 
