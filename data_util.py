@@ -1,17 +1,17 @@
+from data_generator import *
+from bitstamp import *
+from data_agent import *
+from providers import OnLineDataProvider
+from source_data_generator import *
+
 from tqdm.notebook import tqdm
 import os
 import numpy as np
-from data_generator import *
-from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator, pad_sequences
-from bitstamp import *
-from data_agent import *
-from providers import *
-
-from collections import Counter
+from joblib import dump, load
 from imblearn.over_sampling import RandomOverSampler
 from imblearn.under_sampling import RandomUnderSampler 
 
-def get_online_data(minutes, source_data_generator, load_from_disk, file_prefix = ""):
+def get_online_data(minutes, source_data_generator: SourceDataGenerator, load_from_disk, file_prefix = ""):
     
     online = OnLineDataProvider(
                  sourceDataGenerator = source_data_generator,
@@ -38,7 +38,57 @@ def get_online_data(minutes, source_data_generator, load_from_disk, file_prefix 
     
     return online
 
+def load_val_data_with_total(minutes, window, val_end, total, currency_list = ["btcusd"]):
+    tec = TecAn(windows = window, windows_limit = 100)
+    source_data_generator = SourceDataGenerator(tec = tec)
 
+
+    online = OnLineDataProvider(
+                 source_data_generator = source_data_generator,
+                 minutes = minutes,
+                 train_keys = [],
+                 train_limit = 40,
+                 val_limit = 1000,
+                 val_keys = currency_list,
+                 val_start = val_end,
+                 val_end = val_end,
+                 train_start_list = []
+    )
+
+    start = val_end - (60 * total * minutes)
+    end = val_end - (60 * minutes)
+
+    online.load_val_cache(
+                    val_keys = currency_list,                  
+                    start = start,
+                    end = end
+                    )
+    return online
+
+def load_val_data(minutes,
+                    window,
+                    val_start,
+                    val_end,
+                    currency_list = ["btcusd"]):
+
+    tec = TecAn(windows = window, windows_limit = 100)
+    source_data_generator = SourceDataGenerator(tec = tec)
+
+    online = OnLineDataProvider(
+                 source_data_generator = source_data_generator,
+                 minutes = minutes,
+                 train_keys = [],
+                 train_limit = 1000,
+                 val_limit = 1000,
+                 val_keys = currency_list,
+                 val_start = val_start,
+                 val_end = val_end,
+                 train_start_list = val_start
+    )
+    
+    online.load_val_cache(currency_list, val_start, val_end)
+    
+    return online
 
 on_state_parsed = lambda list, price, amount: list
 
@@ -188,3 +238,13 @@ def get_y_data(ohlc, shift = -1):
     combined_data[f'y'] = np.where(combined_data['direction'] > 0, 1, 0)
     
     return combined_data[f'y'].to_numpy()
+
+
+def get_sequencial_data(trainX, trainY, step):
+    y = get_y_data(
+        pd.DataFrame(trainY, columns = ['Close']), 
+        (-1 * step)
+    )
+    #x, y, closed_prices = series_to_supervised(trainX, n_in=2), y, trainY
+    x, y, closed_prices = trainX, y, trainY
+    return x, y, closed_prices

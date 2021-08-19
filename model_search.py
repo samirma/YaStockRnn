@@ -10,7 +10,6 @@ from bitstamp import *
 from model import *
 from providers import *
 
-
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.datasets import make_moons, make_circles, make_classification
@@ -181,6 +180,47 @@ def get_all_models(indexs_models):
             #models.append(MockCoPilotModel(tmp(), getModel()))
     return models
 
+
+
+def run_trial(model, provider, step):
+           
+    reference_profit = {}
+    models_profit = {}
+
+    models_profit_metric = {}
+
+    models_score = {}
+    
+    model_result = {}
+    
+    profits = []
+    for train_set in provider.val_keys:
+        trainX_raw, trainY_raw, times = provider.load_val_data(train_set)
+        x, y, closed_prices = get_sequencial_data(trainX_raw, trainY_raw, step)
+        reference = get_max_profit(x, y, closed_prices, step)
+
+        key = train_set
+
+        reference_profit[key] = reference.get_profit()
+        #print(reference.current)
+
+        back, score = eval_step(model, train_set, step, provider)
+        
+        #models_profit[key] = f"{back.get_profit()}"
+        models_profit[key] = back.get_profit()
+        models_score[key] = score
+        models_profit_metric[key] = back.get_profit() / reference.get_profit()
+
+        profits.append(back.current)
+
+    model_result['profit'] = np.average(profits)
+    model_result['model'] = model
+    model_result['models_profit'] = models_profit
+    model_result['models_score'] = models_score
+    model_result['models_profit_metric'] = models_profit_metric
+    model_result['reference_profit'] = reference_profit
+       
+    return model_result
 
 def test_models(provider, get_all_models_factory, steps = [1]):
     

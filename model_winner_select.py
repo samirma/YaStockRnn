@@ -1,4 +1,3 @@
-
 from tec_an import *
 from data_util import *
 from sklearn_model_hyper import *
@@ -9,41 +8,13 @@ from backtest import *
 from bitstamp import *
 from model import *
 from providers import *
+from eval_model import *
 
 from model_search import print_result
 
 import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn.datasets import make_moons, make_circles, make_classification
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.svm import SVC
-from sklearn.gaussian_process.kernels import RBF
-from sklearn.tree import DecisionTreeClassifier
-from catboost import CatBoostClassifier
-from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
-import xgboost as xgb
-from sklearn.naive_bayes import GaussianNB
-from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
-from sklearn.linear_model import LogisticRegression
-from sklearn.utils.validation import check_is_fitted
 
 from joblib import dump, load
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler, MinMaxScaler, Normalizer
-from sklearn.datasets import make_moons, make_circles, make_classification
-from sklearn.neural_network import MLPClassifier
-from sklearn.svm import SVC
-from sklearn.gaussian_process import GaussianProcessClassifier
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
-from sklearn.metrics import *
-from sklearn.feature_selection import SelectFromModel
-from sklearn.svm import LinearSVC
-from sklearn.pipeline import make_pipeline
-
-from sklearn.metrics import confusion_matrix
-from sklearn.pipeline import Pipeline
-from sklearn.feature_selection import RFE, RFECV
 from datetime import datetime
 
 from tqdm import tqdm
@@ -54,34 +25,6 @@ import argparse
 def order(e):
     return e['profit']
     #return e['result']['profit']
-
-
-def load_online(minutes, window, val_end, currency_list = ["btcusd"]):
-    tec = TecAn(windows = window, windows_limit = 100)
-    source_data_generator = SourceDataGenerator(tec = tec)
-
-
-    online = OnLineDataProvider(
-                 source_data_generator = source_data_generator,
-                 minutes = minutes,
-                 train_keys = [],
-                 train_limit = 40,
-                 val_limit = 1000,
-                 val_keys = currency_list,
-                 val_start = val_end - (60000 * 60),
-                 val_end = val_end,
-                 train_start_list = []
-    )
-
-    start = val_end - (60 * 500 * minutes)
-    end = val_end - (60 * minutes)
-
-    online.load_val_cache(
-                    val_keys = currency_list,                  
-                    start = start,
-                    end = end
-                    )
-    return online
 
 def load_results_path(results_path):
     try:
@@ -104,7 +47,7 @@ def load_results_from_path_list(path_list):
     return all_models
 
 
-def get_scorecoard(currs, all_models, timestamp, minutes_list):
+def get_scorecoard(currency_list, all_models, timestamp, minutes_list):
     scoreboard = []
 
     online_cache = {}
@@ -126,7 +69,7 @@ def get_scorecoard(currs, all_models, timestamp, minutes_list):
             online = online_cache[cache_key]
         except :
             #print(f"Not found {cache_key}")
-            online = load_online(minutes = minutes, window = window, val_end = timestamp, currency_list = currs)
+            online = load_online(minutes = minutes, window = window, val_end = timestamp, currency_list = currency_list)
             online_cache[cache_key] = online
             
         profits = []
@@ -135,11 +78,17 @@ def get_scorecoard(currs, all_models, timestamp, minutes_list):
         
         has_negative = False
         
-        for train_set in currs:
-            back = test_model(model, train_set, online, step, False)
+        for currency in currency_list:
+
+            back, metrics = eval_model(
+                model=model,
+                currency=currency,
+                step=step,
+                provider=online
+            )
             back_profit = back.get_profit()
             profits.append(back_profit)
-            backs[train_set] = back
+            backs[currency] = back
             #print(f"{train_set} -> {back_profit}")
             if (back_profit <= 0 and not has_negative):
                 has_negative = True

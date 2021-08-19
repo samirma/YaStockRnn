@@ -49,10 +49,13 @@ class OnLineDataProvider():
         self.val_end = val_end
         self.verbose = verbose
         self.train_start_list = train_start_list
-        self.source_data_generator = source_data_generator
+        self.source_data_generator :SourceDataGenerator = source_data_generator
         self.steps = (minutes * 60)
         self.resample = f'{minutes}Min'
     
+    def windows(self):
+        return self.source_data_generator.tec.windows
+
     def load_cache(self):
         self.load_train_cache()
         self.load_val_cache(self.val_keys, self.val_start, self.val_end)

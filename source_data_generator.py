@@ -8,12 +8,12 @@ import datetime
 
 class SourceDataGenerator():
     def __init__(self,
-                 tec,
+                 tec: TecAn,
                  base_dir = "data/"
                 ):
         
         self.base_dir = base_dir
-        self.tec = tec
+        self.tec: TecAn = tec
 
             
     def save(self, data_set, prefix = ""):

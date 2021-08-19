@@ -136,9 +136,32 @@ class DataAgent():
         self.on_closed_price(price)
         x = self.taProc.add_tacs_realtime([], price, amount, self.tec)
         is_up = self.on_new_data(x)
-        action = (timestamp, price, x, is_up)
+        action = AgentHistory(
+                timestamp = timestamp,
+                price = price,
+                x = x,
+                is_up = is_up
+        )
         self.on_action(action)
          
     def report(self):
         for data in self.history:
-            print(f"{data[0]} - {data[1]} - {data[3]}")
+            print(f"{data.timestamp} - {data.price} - {data.is_up}")
+
+
+class AgentHistory():
+    
+    def __init__(self,
+                 timestamp, 
+                 price, 
+                 x, 
+                 is_up
+                 ):
+        self.timestamp = timestamp
+        self.price = price
+        self.x = x
+        self.is_up = is_up
+
+    def __str__(self) -> str:
+        return f"AgentHistory (timestamp={self.timestamp} price={self.price} is_up={self.is_up})"
+           
