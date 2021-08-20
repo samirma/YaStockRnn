@@ -1,6 +1,5 @@
 import json
 import websocket
-from numpy import array
 from tqdm.notebook import tqdm
 import requests
 import hashlib
@@ -8,9 +7,8 @@ import hmac
 import time
 import requests
 import uuid
-import sys
 import datetime
-from stock_agent import *
+from stock_agent import BackTest
 from configparser import ConfigParser
 import uuid
 from urllib.parse import urlencode

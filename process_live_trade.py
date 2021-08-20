@@ -1,19 +1,11 @@
-from tec_an import TecAn
 from data_agent import *
-from data_util import *
-from sklearn_model_hyper import *
 from stock_agent import *
-from backtest import *
 from joblib import *
 from tec_an import *
 from bitstamp import *
-from model import *
 from model_winner_select import *
-from eval_model import add_hot_load
 
-import pandas as pd
 import argparse
-
 
 class RawStateDownloader(LiveBitstamp):
     
@@ -74,7 +66,11 @@ def start_process_by_result(result, currency, simulate_on_price, hot_load):
                                     currency = currency,
                                     hot_load = hot_load,
                                     model = model,
-                                    simulate_on_price = simulate_on_price)
+                                    simulate_on_price = simulate_on_price,
+                                    verbose = True)
+
+    back.verbose = True
+    stock.verbose = True
 
     on_raw_data = lambda raw: agent.on_new_raw_data(raw)
 
@@ -91,7 +87,7 @@ def start_process_by_result(result, currency, simulate_on_price, hot_load):
 
     while (True):
         bt.connect()
-        print("reconnectiong")
+        print("Reconnectiong")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

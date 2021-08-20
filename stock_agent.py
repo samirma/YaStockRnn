@@ -1,7 +1,6 @@
 import pandas as pd
 import datetime as dt
 import numpy as np
-from sklearn_model_hyper import *
 import pandas as pd
 from pandas import concat
 
@@ -21,8 +20,6 @@ class BackTest():
         self.pending = -1
         self.sell_on_profit = sell_on_profit
         self.reset()
-        if (self.verbose):
-            print(self)
         
     def reset(self):
         self.current = self.initial_value

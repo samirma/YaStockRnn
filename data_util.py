@@ -3,7 +3,6 @@ from bitstamp import *
 from data_agent import *
 from providers import OnLineDataProvider
 from source_data_generator import *
-
 from tqdm.notebook import tqdm
 import os
 import numpy as np
@@ -38,7 +37,7 @@ def get_online_data(minutes, source_data_generator: SourceDataGenerator, load_fr
     
     return online
 
-def load_val_data_with_total(minutes, window, val_end, total, currency_list = ["btcusd"]):
+def load_val_data_with_total(minutes, window, val_end, total, currency_list, verbose):
     tec = TecAn(windows = window, windows_limit = 100)
     source_data_generator = SourceDataGenerator(tec = tec)
 
@@ -52,7 +51,8 @@ def load_val_data_with_total(minutes, window, val_end, total, currency_list = ["
                  val_keys = currency_list,
                  val_start = val_end,
                  val_end = val_end,
-                 train_start_list = []
+                 train_start_list = [],
+                 verbose=True
     )
 
     start = val_end - (60 * total * minutes)
@@ -69,7 +69,8 @@ def load_val_data(minutes,
                     window,
                     val_start,
                     val_end,
-                    currency_list = ["btcusd"]):
+                    currency_list,
+                    verbose):
 
     tec = TecAn(windows = window, windows_limit = 100)
     source_data_generator = SourceDataGenerator(tec = tec)
@@ -83,7 +84,8 @@ def load_val_data(minutes,
                  val_keys = currency_list,
                  val_start = val_start,
                  val_end = val_end,
-                 train_start_list = val_start
+                 train_start_list = val_start,
+                 verbose = verbose
     )
     
     online.load_val_cache(currency_list, val_start, val_end)
@@ -208,10 +210,6 @@ def create_dataset(X, y, time_steps=1, null_value = [0, 0]):
         Xs.append(v)
         ys.append(y[i + time_steps])
     return np.array(Xs), np.array(ys)
-
-def get_gen(set_x, set_y, shuffle=True, batch_size=64, time_steps=30):
-    set_y = prepare_y(set_y)
-    return TimeseriesGenerator(set_x, set_y, length=time_steps, batch_size=batch_size, shuffle=shuffle)
 
 
 def get_y_data(ohlc, shift = -1):

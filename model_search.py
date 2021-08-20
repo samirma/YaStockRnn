@@ -9,21 +9,18 @@ from backtest import *
 from bitstamp import *
 from model import *
 from providers import *
+from eval_model import *
 
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.datasets import make_moons, make_circles, make_classification
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.svm import SVC
 from sklearn.gaussian_process.kernels import RBF
 from sklearn.tree import DecisionTreeClassifier
 from catboost import CatBoostClassifier
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 import xgboost as xgb
-from sklearn.naive_bayes import GaussianNB
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
-from sklearn.linear_model import LogisticRegression
-from sklearn.utils.validation import check_is_fitted
 from sklearn.ensemble import ExtraTreesClassifier
 
 from joblib import dump, load
@@ -204,7 +201,14 @@ def run_trial(model, provider, step):
         reference_profit[key] = reference.get_profit()
         #print(reference.current)
 
-        back, score = eval_step(model, train_set, step, provider)
+        back, score = eval_model(
+                model, 
+                train_set, 
+                step = step, 
+                provider = provider,
+                hot_load_total = 100,
+                verbose = False
+                )
         
         #models_profit[key] = f"{back.get_profit()}"
         models_profit[key] = back.get_profit()

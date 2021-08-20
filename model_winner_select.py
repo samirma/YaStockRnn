@@ -40,38 +40,40 @@ def load_results_from_path_list(path_list):
     for path in path_list:
         results = load_results_path(path)
         for result in results:
-            if(result['profit'] > 100):
+            if(result['profit'] > 101):
                 all_models.append(result)
         
     print(f"Pre selected: {len(all_models)}")
     return all_models
 
 
-def get_scorecoard(currency_list, all_models, timestamp, minutes_list):
-    scoreboard = []
+def get_scorecoard(currency_list, all_models, minutes_list, cache :CacheProvider,
+        time_start,
+        time_end):
 
-    online_cache = {}
+    scoreboard = []
 
     for best in tqdm(all_models):
         
         model = best['model']
-        window = best['window']
+        windows = best['window']
         minutes = best['minutes']
         step = best['step']
-        profit = best['profit']
 
         if minutes not in minutes_list :
             continue
 
-        #print(f"Minutes={minutes} Window={window} Step={step} | {profit}")
-        cache_key = f"{minutes}-{window}"
-        try:
-            online = online_cache[cache_key]
-        except :
-            #print(f"Not found {cache_key}")
-            online = load_online(minutes = minutes, window = window, val_end = timestamp, currency_list = currency_list)
-            online_cache[cache_key] = online
-            
+        current_time = int(datetime.timestamp((datetime.now())))
+        if (current_time < (time_end + (minutes * 60))):
+            time_end = (time_end - (minutes * 60))
+
+        online = cache.get_provider(
+            minutes = minutes,
+            windows = windows,
+            val_start = time_start,
+            val_end = time_end
+        )
+        
         profits = []
         backs = {}
         score = {}
@@ -84,7 +86,9 @@ def get_scorecoard(currency_list, all_models, timestamp, minutes_list):
                 model=model,
                 currency=currency,
                 step=step,
-                provider=online
+                provider=online,
+                verbose=False,
+                cache = cache
             )
             back_profit = back.get_profit()
             profits.append(back_profit)
@@ -96,8 +100,7 @@ def get_scorecoard(currency_list, all_models, timestamp, minutes_list):
         score['profit'] = np.average(profits)
         score['backs'] = backs
         score['result'] = best
-        if (not has_negative):
-            scoreboard.append(score)
+        scoreboard.append(score)
 
     return scoreboard
 
@@ -105,7 +108,22 @@ def get_best_model(currency_list, result_paths, timestamp, minutes_list, winner_
 
     all_models = load_results_from_path_list(result_paths)
 
-    scoreboard = get_scorecoard(currency_list, all_models, timestamp, minutes_list)
+    cache = CacheProvider(
+        currency_list=currency_list,
+        verbose = False
+    )
+
+    time_start = timestamp - 36000
+    time_end = timestamp
+
+    scoreboard = get_scorecoard(
+        currency_list = currency_list, 
+        all_models = all_models, 
+        minutes_list = minutes_list, 
+        cache = cache,
+        time_start = time_start,
+        time_end = time_end
+        )
 
     selected_count = len(scoreboard)
 

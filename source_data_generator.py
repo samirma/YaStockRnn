@@ -147,12 +147,14 @@ class SourceDataGenerator():
         df = pd.DataFrame(parsed)
         return df
 
-    def process_online_data(self, result, resample, currency, verbose = False):
-        init = datetime.datetime.fromtimestamp(int(result[0]['timestamp']))
-        end = datetime.datetime.fromtimestamp(int(result[-1]['timestamp']))
+    def process_online_data(self, result, resample, currency, verbose):
+        init_time_stamp = result[0]['timestamp']
+        end_time_stamp = result[-1]['timestamp']
+        init = datetime.datetime.fromtimestamp(int(init_time_stamp))
+        end = datetime.datetime.fromtimestamp(int(end_time_stamp))
 
         if (verbose):
-            print(f"Downloaded from {init} to {end} {result[-1]['open']}")
+            print(f"Downloaded from {init}({init_time_stamp}) to {end}({end_time_stamp}) {result[-1]['open']}")
 
         OPEN = 'open'
         TIME = 'timestamp'
@@ -175,7 +177,12 @@ class SourceDataGenerator():
         if (verbose):
             print("Processing {} of {}".format(len(result), currency))
 
-        for data in tqdm(result):
+        result_list = result
+
+        if (verbose):
+            result_list = tqdm(result)
+
+        for data in result_list:
             price = float(data[OPEN])
             volume = float(data[VOLUME])
             timestamp = int(data[TIME])
@@ -189,7 +196,7 @@ class SourceDataGenerator():
 
         return np.array(final_x), np.array(prices), np.array(timestamps)
 
-    def get_full_database_online(self, currency, resample, start=1619823600, end=-1, step=60, limit=10, verbose = False):
+    def get_full_database_online(self, currency, resample, start, step, limit, verbose, end=-1):
 
         result = load_bitstamp_ohlc(currency, 
                                     start=start,
@@ -200,7 +207,7 @@ class SourceDataGenerator():
 
         return self.process_online_data(result, resample, currency)
 
-    def get_full_database_online_period(self, currency, resample, start, end, step=60, verbose = False):
+    def get_full_database_online_period(self, currency, resample, start, end, step, verbose):
     
         result = load_bitstamp_ohlc_by_period(currency, 
                                     start=start,
@@ -209,7 +216,7 @@ class SourceDataGenerator():
                                     verbose = verbose
                                     )
 
-        return self.process_online_data(result, resample, currency)
+        return self.process_online_data(result = result, resample = resample, currency = currency, verbose = verbose)
 
 
 

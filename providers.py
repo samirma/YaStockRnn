@@ -1,5 +1,5 @@
-from data_util import *
 from source_data_generator import *
+
 
 class LocalDataProvider():
     
@@ -30,10 +30,10 @@ class OnLineDataProvider():
                  val_end,
                  train_keys,
                  val_keys,
+                 verbose,
                  train_start_list,
                  train_limit = 100,
-                 val_limit = 1000,
-                 verbose = True
+                 val_limit = 1000
                 ):
         #self.train_keys = ["ltcbtc", "btceur", "btcusd", "bchusd", "ethusd", "xrpusd"]
         self.train_keys = train_keys
