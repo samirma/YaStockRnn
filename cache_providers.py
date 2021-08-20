@@ -18,7 +18,7 @@ class CacheProvider():
                     window = windows,
                     val_start = val_start,
                     val_end = val_end,
-                    verbose = self.verbose,
+                    verbose = False,
                     currency_list = self.currency_list
                     )
                 self.cache[cache_key] = online
@@ -36,7 +36,7 @@ class CacheProvider():
                                     window = windows,
                                     total = 200, 
                                     currency_list = self.currency_list,
-                                    verbose = self.verbose,
+                                    verbose = False,
                                     val_end = val_end)
 
             self.cache[cache_key] = online

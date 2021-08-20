@@ -52,7 +52,7 @@ def load_val_data_with_total(minutes, window, val_end, total, currency_list, ver
                  val_start = val_end,
                  val_end = val_end,
                  train_start_list = [],
-                 verbose=True
+                 verbose=verbose
     )
 
     start = val_end - (60 * total * minutes)
