@@ -26,7 +26,7 @@ def add_hot_load(minutes,
     online = cache.get_provider_total(
         minutes = minutes, 
         windows = win, 
-        total = total, 
+        total = total - 1, 
         val_end = timestamp_end
         )
     
@@ -106,7 +106,9 @@ def eval_model(
         histoty_times.append(data.timestamp)
         preds.append(pred)
 
-    preds = preds[-(len(y)):]
+
+    print(histoty_times[:10])
+    print(time_list[:10])
 
     metrics = {}
     metrics["recall"] = recall_score(y, preds)
