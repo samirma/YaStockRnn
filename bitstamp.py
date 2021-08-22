@@ -195,14 +195,14 @@ class Bitstamp:
         }
         self.ws.send(json.dumps(payload))
         
-def load_bitstamp_ohlc_by_period(currency_pair, start, end, step, limit = 1000, verbose = False):
+def load_bitstamp_ohlc_by_period(currency_pair, start, end, step, verbose = False):
     data = []
     page_start = start
     while (True):
         page = load_bitstamp_ohlc(currency_pair=currency_pair,
                                     start = page_start,
                                     step = step,
-                                    limit = limit,
+                                    limit = 1000,
                                     verbose = verbose
         )           
         if (len(data) > 0):
@@ -219,7 +219,7 @@ def load_bitstamp_ohlc_by_period(currency_pair, start, end, step, limit = 1000, 
         
         
     
-def load_bitstamp_ohlc(currency_pair, start=-1, end=-1, step=60, limit=5, verbose = False):
+def load_bitstamp_ohlc(currency_pair, step, verbose, limit, start, end=-1):
     # params:
     #   currency_pair: currency pair on which to trigger the request
     #   start: unix timestamp from when OHLC data will be started

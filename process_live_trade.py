@@ -50,6 +50,15 @@ def start_process_index(results_path, index, currency, simulate_on_price, hot_lo
 
     start_process_by_result(result[index], currency, simulate_on_price, hot_load)
 
+def init_raw_process(currency, minutes, timestamp, agent :DataAgent):
+    step = minutes*60
+    data = load_bitstamp_ohlc(currency_pair=currency, end=timestamp, step=step,limit=1)[-1]
+    open_price = float(data["open"])
+    open_amount = float(data["volume"])
+    open_timestamp = int(data["timestamp"])
+    agent.add_data(price = open_price, amount = open_amount, timestamp = open_timestamp)
+
+
 def start_process_by_result(result, currency, simulate_on_price, hot_load):
     model = result['model']
     window = result['window']
@@ -66,6 +75,7 @@ def start_process_by_result(result, currency, simulate_on_price, hot_load):
                                     currency = currency,
                                     hot_load = hot_load,
                                     model = model,
+                                    timestamp = int(datetime.timestamp((datetime.now()))),
                                     simulate_on_price = simulate_on_price,
                                     verbose = True)
 
@@ -84,6 +94,8 @@ def start_process_by_result(result, currency, simulate_on_price, hot_load):
                         )
 
     bt = Bitstamp(live, currency = currency)
+
+    init_raw_process(currency, minutes, timestamp, agent)
 
     while (True):
         bt.connect()
