@@ -52,20 +52,42 @@ def start_process_index(results_path, index, currency, simulate_on_price, hot_lo
 
 def init_raw_process(currency, minutes, timestamp, agent :DataAgent):
     step = minutes*60
-    data = load_bitstamp_ohlc(currency_pair=currency, end=timestamp, step=step,limit=1)[-1]
-    open_price = float(data["open"])
-    open_amount = float(data["volume"])
-    open_timestamp = int(data["timestamp"])
-    agent.add_data(price = open_price, amount = open_amount, timestamp = open_timestamp)
+    page = load_bitstamp_ohlc(
+        currency_pair=currency,
+        start=agent.last_timestamp,
+        end=timestamp,
+        step=step,
+        limit=100,
+        verbose=True
+        )
+    
+    for data in page:
+        open_price = float(data["open"])
+        open_amount = float(data["volume"])
+        open_timestamp = int(data["timestamp"])
+
+        if (open_timestamp < agent.last_timestamp):
+            continue
+
+        recovered_date = pd.to_datetime(open_timestamp, unit='s')
+        reference_date = pd.to_datetime(timestamp, unit='s')
+
+        print(f"Pre {agent.last_index}")
+        agent.last_index = agent.process_data_input(
+            price = open_price, 
+            amount = open_amount, 
+            timestamp = open_timestamp
+            )
+        print(f"Pos {agent.last_index} -> {agent.last_timestamp}")
+        print(f"Init reference_date: {reference_date} recovered_date: {recovered_date} ")
 
 
-def start_process_by_result(result, currency, simulate_on_price, hot_load):
-    model = result['model']
-    window = result['window']
-    minutes = result['minutes']
-    step = result['step']
-    profit = result['profit']
-    print(f"Minutes={minutes} Window={window} Step={step} | {profit}")
+def start_process_by_result(result: ModelDetail, currency, simulate_on_price, hot_load):
+    model = result.model
+    window = result.data_detail.windows
+    minutes = result.data_detail.minutes
+    step = result.data_detail.steps_ahead
+    print(f"Minutes={minutes} Window={window} Step={step}")
     print(f"Simulate on price {simulate_on_price}")
     print(f"{model}")
 
@@ -137,7 +159,11 @@ if __name__ == '__main__':
             winner_path = None
         )
         print("Winner found")
-        start_process_by_result(winner, args.currency, args.simulate_on_price, args.hot_load)
+        start_process_by_result(
+            result = winner, 
+            currency = args.currency, 
+            simulate_on_price = args.simulate_on_price, 
+            hot_load = args.hot_load)
     elif (args.results_path != None and args.index != None):
         print(f"result_path --r: {args.result_path}")
         print(f"index --i: {args.index}")

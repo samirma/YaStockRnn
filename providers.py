@@ -35,26 +35,23 @@ class OnLineDataProvider():
                  train_limit = 100,
                  val_limit = 1000
                 ):
-        #self.train_keys = ["ltcbtc", "btceur", "btcusd", "bchusd", "ethusd", "xrpusd"]
         self.train_keys = train_keys
-        #self.train_keys = ["ltcbtc", "btceur", "linkusd", "xrpusd"]
         self.val_keys = val_keys
         self.train_data = []
         self.vals = {}
         self.minutes = minutes
         self.train_limit = train_limit
-        
         self.val_limit = val_limit
         self.val_start = val_start
         self.val_end = val_end
         self.verbose = verbose
         self.train_start_list = train_start_list
         self.source_data_generator :SourceDataGenerator = source_data_generator
-        self.steps = (minutes * 60)
+        self.data_detail: DataDetail = DataDetail(windows=source_data_generator.tec.windows, minutes=minutes, steps_ahead=1)
         self.resample = f'{minutes}Min'
     
     def windows(self):
-        return self.source_data_generator.tec.windows
+        return self.data_detail.windows
 
     def load_cache(self):
         self.load_train_cache()
@@ -65,11 +62,11 @@ class OnLineDataProvider():
 
         def load_from_time(time): 
             for curr in self.train_keys:
-                x, prices, times = self.source_data_generator.get_full_database_online(curr, 
-                                                                                resample = self.resample, 
+                x, prices, times = self.source_data_generator.get_full_database_online(
+                                                                                currency = curr, 
+                                                                                data_detail = self.data_detail, 
                                                                                 limit = self.train_limit,
-                                                                                step = self.steps,
-                                                                                start=time,
+                                                                                start = time,
                                                                                 verbose = self.verbose
                                                                                 )
                 to_be_removed = 100
@@ -84,9 +81,9 @@ class OnLineDataProvider():
     def load_val_cache(self, val_keys, start, end):
 
         for key in val_keys:
-            x, prices, times = self.source_data_generator.get_full_database_online_period(key, 
-                                                                            resample = self.resample,
-                                                                            step = self.steps,
+            x, prices, times = self.source_data_generator.get_full_database_online_period(
+                                                                            currency = key,
+                                                                            data_detail = self.data_detail,
                                                                             start=start,
                                                                             end=end,
                                                                             verbose = self.verbose
@@ -109,5 +106,5 @@ class OnLineDataProvider():
     def __str__(self):
         resume = {}
         for val in self.val_keys:
-            resume[val] = len(self.val_keys[val])
-        return f"OnLineDataProvider ( val_keys = {resume}, train_data = {self.train_data} , minutes = {self.minutes})"
+            resume[val] = len(self.vals[val])
+        return f"OnLineDataProvider (val_keys = {resume}, train_data = {len(self.train_data)} , data_detail = {self.data_detail})"

@@ -46,7 +46,7 @@ def add_hot_load(minutes,
     if (verbose):
         print(f"###### Past report({total}): {start}({timestamp_start}) - {end}({timestamp_end}) ######")
         back.report()
-        print("###### - ######")
+        print(f"###### {agent.last_timestamp} ######")
 
 def eval_model(
     model, 
@@ -87,14 +87,23 @@ def eval_model(
     )
 
     back.reset()
+
+    model_agent.verbose = verbose
+    back.verbose = verbose
+
     agent.history = []
-    x_list, price_list, time_list
+
     for idx in range(len(price_list)):
+        #if ((idx) != len(agent.history)):
+        #    print(f"{idx}) {len(agent.history)} - {len(price_list)}")
+        #    20/0
         price = price_list[idx]
         time = time_list[idx]
         order = [[f"{price}", f"{price}"]]
         amount = 0.0
+        #print(f"{time} - {price} ")
         agent.process_data(price, amount, time, order, order)
+
     back.on_down(back.buy_price, back.buy_price)
     
     preds = []
@@ -106,9 +115,10 @@ def eval_model(
         histoty_times.append(data.timestamp)
         preds.append(pred)
 
-
-    print(histoty_times[:10])
-    print(time_list[:10])
+    #print(f"{len(price_list)} - preds: {len(preds)}")
+    #print(f"agent.history{len(agent.history)}")
+    #print(histoty_times[:10])
+    #print(time_list[:10])
 
     metrics = {}
     metrics["recall"] = recall_score(y, preds)
@@ -157,9 +167,8 @@ def get_agent(minutes,
     on_state = lambda timestamp, price, buy, sell: model_agent.on_new_state(timestamp, price, buy, sell)
 
     agent = DataAgent(
-        taProc = TacProcess(), 
         tec = TecAn(windows = win, windows_limit = 100),
-        resample = f'{minutes}Min',
+        minutes = minutes,
         on_state = on_state,
         on_new_data = on_new_data,
         verbose = False

@@ -1,6 +1,7 @@
 from data_util import *
 from data_agent import *
 from bitstamp import *
+from entities.entities import *
 
 import pandas as pd
 import numpy as np
@@ -48,7 +49,7 @@ class SourceDataGenerator():
         return trainX, trainY, valX, valY
 
 
-    def get_full_database(self, resample, raw_dir):
+    def get_full_database(self, data_detail: DataDetail, raw_dir):
 
         full_data = self.base_dir + raw_dir + "/"
         data_gen = DataGenerator(random = False, base_dir = full_data)
@@ -64,8 +65,8 @@ class SourceDataGenerator():
         on_closed_price = lambda price: closed_prices.append(price)
 
         agent = DataAgent(
-            tec = self.tec,
-            resample = resample,
+            tec = TecAn(windows = data_detail.windows),
+            minutes = data_detail.minutes,
             on_new_data = on_new_data,
             on_closed_price = on_closed_price
         )
@@ -147,7 +148,7 @@ class SourceDataGenerator():
         df = pd.DataFrame(parsed)
         return df
 
-    def process_online_data(self, result, resample, currency, verbose):
+    def process_online_data(self, result, data_detail: DataDetail, currency, verbose):
         init_time_stamp = result[0]['timestamp']
         end_time_stamp = result[-1]['timestamp']
         init = datetime.datetime.fromtimestamp(int(init_time_stamp))
@@ -168,8 +169,10 @@ class SourceDataGenerator():
         on_closed_price = lambda price: price
 
         agent = DataAgent(
-            tec = self.tec,
-            resample = resample,
+            tec = TecAn(
+                windows=data_detail.windows
+            ),
+            minutes = data_detail.minutes,
             on_new_data = on_new_data,
             on_closed_price = on_closed_price
         )
@@ -196,27 +199,25 @@ class SourceDataGenerator():
 
         return np.array(final_x), np.array(prices), np.array(timestamps)
 
-    def get_full_database_online(self, currency, resample, start, step, limit, verbose, end=-1):
+    def get_full_database_online(self, currency, data_detail: DataDetail, start, limit, verbose, end=-1):
 
         result = load_bitstamp_ohlc(currency, 
                                     start=start,
                                     end=end,
-                                    step=step, 
+                                    step=data_detail.get_seconds(),
                                     limit=limit,
                                     verbose = verbose)
 
-        return self.process_online_data(result, resample, currency)
+        return self.process_online_data(result = result, data_detail = data_detail, currency = currency, verbose = verbose)
 
-    def get_full_database_online_period(self, currency, resample, start, end, step, verbose):
+    def get_full_database_online_period(self, currency, data_detail: DataDetail, start, end, verbose):
     
         result = load_bitstamp_ohlc_by_period(currency, 
                                     start=start,
                                     end=end,
-                                    step=step,
+                                    step=data_detail.get_seconds(),
                                     verbose = verbose
                                     )
 
-        return self.process_online_data(result = result, resample = resample, currency = currency, verbose = verbose)
-
-
+        return self.process_online_data(result = result, data_detail = data_detail, currency = currency, verbose = verbose)
 

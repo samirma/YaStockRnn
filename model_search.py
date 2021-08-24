@@ -10,6 +10,7 @@ from bitstamp import *
 from model import *
 from providers import *
 from eval_model import *
+from entities.models import *
 
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -69,7 +70,8 @@ def get_online_data(minutes, source_data_generator, load_from_disk, file_prefix 
                  val_keys = ["btcusd"],
                  val_start = val_start,
                  val_end = val_end,
-                 train_start_list = train_start_list
+                 train_start_list = train_start_list,
+                 verbose = True
     )
 
     online_path = f'data/online{file_prefix}_{minutes}'
@@ -81,7 +83,6 @@ def get_online_data(minutes, source_data_generator, load_from_disk, file_prefix 
         online.load_cache()
         online.sourceDataGenerator = None
         dump(online, online_path)
-        
     
     return online
 
@@ -179,7 +180,7 @@ def get_all_models(indexs_models):
 
 
 
-def run_trial(model, provider, step):
+def run_trial(model, provider: OnLineDataProvider, step):
            
     reference_profit = {}
     models_profit = {}
@@ -189,6 +190,8 @@ def run_trial(model, provider, step):
     models_score = {}
     
     model_result = {}
+
+    cache = CacheProvider(currency_list=provider.val_keys, verbose = False)
     
     profits = []
     for train_set in provider.val_keys:
@@ -204,7 +207,8 @@ def run_trial(model, provider, step):
         back, score = eval_model(
                 model, 
                 train_set, 
-                step = step, 
+                step = step,
+                cache = cache,
                 provider = provider,
                 hot_load_total = 100,
                 verbose = False
@@ -217,16 +221,21 @@ def run_trial(model, provider, step):
 
         profits.append(back.current)
 
-    model_result['profit'] = np.average(profits)
-    model_result['model'] = model
-    model_result['models_profit'] = models_profit
-    model_result['models_score'] = models_score
-    model_result['models_profit_metric'] = models_profit_metric
-    model_result['reference_profit'] = reference_profit
-       
-    return model_result
+    data_detail = DataDetail(
+        windows = provider.data_detail.windows,
+        minutes = provider.data_detail.minutes,
+        steps_ahead = provider.data_detail.steps_ahead,
+    )
 
-def test_models(provider, get_all_models_factory, steps = [1]):
+    trained_model = TrainedModel(
+        profit=np.average(profits),
+        profit_per_currency = models_profit,
+        model_detail=ModelDetail(model=model,data_detail=data_detail)
+    )
+       
+    return trained_model
+
+def test_models(provider, get_all_models_factory, steps):
     
     score_board_by_step = {}
 
@@ -242,37 +251,24 @@ def test_models(provider, get_all_models_factory, steps = [1]):
             
             result = run_trial(model, provider, step)
 
-            result['step'] = step
-
             model_result.append(result)
         
         score_board_by_step[step] = model_result
     
     model_rank = []
     
-    def myFunc(e):
-        return e['profit']
+    def myFunc(e : TrainedModel):
+        return e.profit
 
     for step_idx in score_board_by_step:
         step_board = score_board_by_step[step_idx]
         for result in step_board:
-            if (result['profit'] > 101):
+            if (result.profit > 101):
                 model_rank.append(result)
             
     model_rank.sort(key=myFunc, reverse = True)
     
     return model_rank
-
-def process_model(minu, win, step, model, provider):
-        #print(f"Training {model} {provider} ")
-        train_by_step(model, step, provider)
-        #print(f"Checking {minu} {win} {step} ")
-        result = run_trial(model, provider, step)
-        result['window'] = win
-        result['minutes'] = minu
-        result['step'] = step
-        #print(result)
-        return result
 
 def list():
     models = get_classifiers()
@@ -308,24 +304,30 @@ def process(minutes, windows, steps, models_index_list):
         
         tec = TecAn(windows = win, windows_limit = 100)
         sourceDataGenerator = SourceDataGenerator(tec = tec)
-        provider = get_online_data(minu, sourceDataGenerator, load_from_disk, win)
+        provider = get_online_data(
+            minutes = minu, 
+            source_data_generator=sourceDataGenerator, 
+            load_from_disk = load_from_disk, 
+            file_prefix=win
+            )
         
-        result = process_model(minu, win, step, model, provider)
+        train_by_step(model, step, provider)
+        result = run_trial(model, provider, step)
+
         min_results.append(result)
 
     return min_results
 
-def order_by_proft(e):
-    return e['profit']
+def order_by_proft(e:TrainedModel):
+    return e.profit
     #return e['models_profit_metric']['btcusd']
 
-def print_result(result):
-    model = result['model']
-    window = result['window']
-    minutes = result['minutes']
-    step = result['step']
-    profit = result['profit']
-    print(f"Minutes={minutes} Window={window} Step={step} | {profit} {result['models_profit_metric']}")
+def print_result(result:ModelDetail):
+    model = result.model
+    window = result.data_detail.windows
+    minutes = result.data_detail.minutes
+    step = result.data_detail.steps_ahead
+    print(f"Minutes={minutes} Window={window} Step={step}")
     print(f"{model}")
 
 def start_model_search(minutes, windows, steps, models_index_list, model_path):
@@ -342,7 +344,7 @@ def start_model_search(minutes, windows, steps, models_index_list, model_path):
     dump(saved_models, model_path)
 
     for best in best_results:
-        if (best['profit'] < 100):
+        if (best.profit < 100):
             continue
         print_result(best)
         #window = best['window']
@@ -408,7 +410,7 @@ if __name__ == '__main__':
 
     windows = [5, 10, 20, 30, 40]
 
-    minutes = [30, 15, 5, 3]
+    minutes = [3, 30, 15, 5]
 
     models_index_list = [i for i in range(len(get_classifiers()))]
 

@@ -9,6 +9,7 @@ from bitstamp import *
 from model import *
 from providers import *
 from eval_model import *
+from entities.models import *
 
 from model_search import print_result
 
@@ -40,25 +41,29 @@ def load_results_from_path_list(path_list):
     for path in path_list:
         results = load_results_path(path)
         for result in results:
-            if(result['profit'] > 101):
+            if(result.profit >= 101):
                 all_models.append(result)
         
     print(f"Pre selected: {len(all_models)}")
     return all_models
 
 
-def get_scorecoard(currency_list, all_models, minutes_list, cache :CacheProvider,
-        time_start,
-        time_end):
+def get_scorecoard(
+    currency_list, 
+    all_models, 
+    minutes_list, 
+    cache :CacheProvider,
+    time_start,
+    time_end):
 
     scoreboard = []
 
     for best in tqdm(all_models):
-        
-        model = best['model']
-        windows = best['window']
-        minutes = best['minutes']
-        step = best['step']
+        trained_model :TrainedModel = best 
+        model_detail = trained_model.model_detail
+        windows = trained_model.model_detail.data_detail.windows
+        minutes = trained_model.model_detail.data_detail.minutes
+        step = trained_model.model_detail.data_detail.steps_ahead
 
         if minutes not in minutes_list :
             continue
@@ -83,7 +88,7 @@ def get_scorecoard(currency_list, all_models, minutes_list, cache :CacheProvider
         for currency in currency_list:
 
             back, metrics = eval_model(
-                model=model,
+                model=model_detail.model,
                 currency=currency,
                 step=step,
                 provider=online,
@@ -99,7 +104,7 @@ def get_scorecoard(currency_list, all_models, minutes_list, cache :CacheProvider
             
         score['profit'] = np.average(profits)
         score['backs'] = backs
-        score['result'] = best
+        score['model_detail'] = model_detail
         scoreboard.append(score)
 
     return scoreboard
@@ -140,22 +145,21 @@ def get_best_model(currency_list, result_paths, timestamp, minutes_list, winner_
     for score in scoreboard[-3:]:
         profit = score['profit']
         backs = score['backs']
-        result = score['result']
-        print(result['model'])
+        result = score['model_detail']
+        print(result)
         for key in backs:
             back = backs[key]
             #backs[back].report()
             trades = f"{back.positive_trades} - {back.negative_trades}"
             print(f"{key} -> {back.current} | {trades}")
-            print(f"{result['models_score'][key]}")
         
         print()
         filtered.append(profit)
     
     best = scoreboard[-1]
 
-    winner = best['result']
-    print(f"Winner for {currency_list}")
+    winner = best['model_detail']
+    print(f"Winner for {currency_list} -> {best['profit']}")
     backs = best['backs']
     for back in backs:
         backs[back].report()
@@ -167,7 +171,7 @@ def get_best_model(currency_list, result_paths, timestamp, minutes_list, winner_
 
 def add_arguments_winner(parser):
 
-    minutes = [15, 5, 3]
+    minutes = [30, 15, 5, 3]
 
     path = "model/"
     files = os.listdir(path)
