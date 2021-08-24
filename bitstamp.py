@@ -204,17 +204,14 @@ def load_bitstamp_ohlc_by_period(currency_pair, start, end, step, verbose = Fals
                                     step = step,
                                     limit = 1000,
                                     verbose = verbose
-        )           
-        if (len(data) > 0):
-            if (data[-1] == page[0]):
-                data.pop(0)
+        )
         for item in page:
             data.append(item)
-            timestamp = int(item['timestamp'])
-            if (timestamp > end):
+            next_page = int(item['timestamp']) + step
+            if (next_page > end):
                 return data
-        
-        page_start = int(data[-1]['timestamp'])
+
+        page_start = next_page
 
         
         
