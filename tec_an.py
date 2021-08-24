@@ -46,7 +46,7 @@ def ta_list(win, fillna=True):
 class TecAn:
     
     def __init__(self, 
-                 windows = 30, 
+                 windows, 
                  windows_limit = 100):
         self.windows = windows
         self.tas = ta_list(self.windows)

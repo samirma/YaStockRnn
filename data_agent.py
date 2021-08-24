@@ -40,24 +40,24 @@ CLOSE = 'close'
 class DataAgent():
     
     def __init__(self,
-                 resample,
-                 taProc = TacProcess(), 
-                 tec = TecAn(windows = 20, windows_limit = 100),
+                 minutes,
+                 tec,
                  on_new_data = lambda x: print("{}".format(x)),
                  on_state = lambda timestamp, price, bid, ask: price,
                  on_closed_price = lambda price: price,
                  verbose = False,
                  save_history = False,
                  ):
-        self.taProc = taProc
+        self.taProc = TacProcess()
         self.tec = tec
         self.final_x = []
         self.list = []
-        self.resample = resample
+        self.minutes = minutes
         self.raw_limit = 10000
         self.last_price = -1 
         self.last_amount = -1
-        self.last_ohlc_count = 1
+        self.last_timestamp = -1
+        self.last_index = 1
         self.on_new_data = on_new_data
         self.on_state = on_state
         self.on_closed_price = on_closed_price
@@ -70,63 +70,68 @@ class DataAgent():
         
     def on_new_data(self, x):
         self.on_new_data(x)
-        
+
     def on_new_raw_data(self, raw):
         price = raw[PRICE_KEY]
         amount = raw[AMOUNT_KEY]
-        timestamp = raw[TIMESTAMP_KEY]
+        timestamp = int(raw[TIMESTAMP_KEY])
         bids = raw[BIDS_KEY]
         asks = raw[ASKS_KEY]
-        self.process_data(price, amount, timestamp, bids, asks)
+        self.process_data(
+            price = price, 
+            amount = amount, 
+            timestamp = timestamp, 
+            bids = bids, 
+            asks = asks
+            )
         
+    def resample(self):
+        return f'{self.minutes}Min'
+
     def process_data(self, price, amount, timestamp, bids, asks):
         
         self.on_state(timestamp, price, bids, asks)
 
         # Only consider when prices changes
-        if (self.last_price == price and self.last_amount == amount):
+        if (self.last_price == price and self.last_amount == amount and self.last_timestamp == timestamp):
             return
         
-        self.last_price = price 
-        self.last_amount = amount
-        
-        timestamp_pd = pd.to_datetime(timestamp, unit='s')
-        self.list.append([timestamp_pd, price])
+        current_index = self.process_data_input(price, amount, timestamp)
         
         #if (len(self.list) > self.raw_limit):
         #    self.list.pop(0)
+
+        if (self.last_index == current_index):
+            return
+        
+        #print(current_index)
+        self.last_index = current_index
+                
+        self.on_new_data_count = self.on_new_data_count + 1
+        
+        self.on_new_price(timestamp, price, amount)
+        
+    def process_data_input(self, price, amount, timestamp):
+        #print(f"{self.last_timestamp} -> {self.last_price} {amount}")
+        self.last_price = price 
+        self.last_amount = amount
+        self.last_timestamp = timestamp
+        timestamp_pd = pd.to_datetime(timestamp, unit='s')
+        self.list.append([timestamp_pd, price])
 
         DATE = 'Date'
         df = pd.DataFrame(self.list, columns = [DATE, CLOSE])
         df = df.set_index(pd.DatetimeIndex(df[DATE]))
                 
-        time = df[CLOSE].resample(self.resample)
+        time = df[CLOSE].resample(self.resample())
         ohlc = time.ohlc()
         
-        #print("{} {}".format(timestamp, len(ohlc)))
-        
-        ohlc_count = len(ohlc)
-        if (ohlc_count < 2 or self.last_ohlc_count == ohlc_count):
-            return
-        
-        self.last_ohlc_count = ohlc_count
-        
-        #print("{} - {}".format(self.last_ohlc_count, ohlc_count))
-        
-        #del ohlc['open']
-        del ohlc['high']
-        del ohlc['low']
-        
-        #price_closed = ohlc.iloc[-2][CLOSE]
-        #print("######")
-        #print(f'{price} open: {ohlc.iloc[-1]["open"]} price_closed: {price_closed}')
-        #print(ohlc)
-        
-        self.on_new_data_count = self.on_new_data_count + 1
-        
-        self.on_new_price(timestamp, price, amount)
-        
         self.ohlc = ohlc
+
+        #print(self.ohlc[-2:])
+
+        return ohlc.index[-1]
+
     
     def on_action(self, action):
         if (self.save_history):
