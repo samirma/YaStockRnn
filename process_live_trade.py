@@ -50,7 +50,13 @@ def start_process_index(results_path, index, currency, simulate_on_price, hot_lo
 
     start_process_by_result(result[index], currency, simulate_on_price, hot_load)
 
-def init_raw_process(currency, minutes, timestamp, agent :DataAgent):
+def init_raw_process(
+    currency, 
+    minutes, 
+    timestamp, 
+    agent :DataAgent, 
+    model_agent:ModelAgent
+    ):
     step = minutes*60
     page = load_bitstamp_ohlc(
         currency_pair=currency,
@@ -72,15 +78,15 @@ def init_raw_process(currency, minutes, timestamp, agent :DataAgent):
         recovered_date = pd.to_datetime(open_timestamp, unit='s')
         reference_date = pd.to_datetime(timestamp, unit='s')
 
-        print(f"Pre {agent.last_index}")
+        #print(f"Pre {agent.last_index}")
         agent.last_index = agent.process_data_input(
             price = open_price, 
             amount = open_amount, 
             timestamp = open_timestamp
             )
-        print(f"Pos {agent.last_index} -> {agent.last_timestamp}")
-        print(f"Init reference_date: {reference_date} recovered_date: {recovered_date} ")
-
+        #print(f"Pos {agent.last_index} -> {agent.last_timestamp}")
+        #print(f"Init reference_date: {reference_date} recovered_date: {recovered_date} ")
+        model_agent.enabled = True
 
 def start_process_by_result(result: ModelDetail, currency, simulate_on_price, hot_load):
     model = result.model
@@ -117,7 +123,7 @@ def start_process_by_result(result: ModelDetail, currency, simulate_on_price, ho
 
     bt = Bitstamp(live, currency = currency)
 
-    init_raw_process(currency, minutes, timestamp, agent)
+    init_raw_process(currency, minutes, timestamp, agent, stock)
 
     while (True):
         bt.connect()
@@ -158,7 +164,9 @@ if __name__ == '__main__':
             timestamp = timestamp,
             winner_path = None
         )
-        print("Winner found")
+
+        print(f"Winner found {winner}")
+
         start_process_by_result(
             result = winner, 
             currency = args.currency, 

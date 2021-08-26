@@ -5,7 +5,6 @@ from data_agent import *
 from data_util import *
 from providers import *
 from cache_providers import *
-from datetime import datetime
 from sklearn.metrics import *
 
 def add_hot_load(minutes, 
@@ -179,7 +178,7 @@ def get_agent(minutes,
             win = win, 
             total = 200, 
             currency = currency, 
-            timestamp_end = timestamp - (60 * minutes), 
+            timestamp_end = timestamp, #- (60 * minutes), 
             verbose = verbose, 
             back = back, 
             model_agent = model_agent, 

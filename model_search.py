@@ -180,7 +180,7 @@ def get_all_models(indexs_models):
 
 
 
-def run_trial(model, provider: OnLineDataProvider, step):
+def run_trial(trained_model: TrainedModel, provider: OnLineDataProvider, step):
            
     reference_profit = {}
     models_profit = {}
@@ -189,8 +189,6 @@ def run_trial(model, provider: OnLineDataProvider, step):
 
     models_score = {}
     
-    model_result = {}
-
     cache = CacheProvider(currency_list=provider.val_keys, verbose = False)
     
     profits = []
@@ -205,7 +203,7 @@ def run_trial(model, provider: OnLineDataProvider, step):
         #print(reference.current)
 
         back, score = eval_model(
-                model, 
+                trained_model.model_detail.model, 
                 train_set, 
                 step = step,
                 cache = cache,
@@ -221,138 +219,122 @@ def run_trial(model, provider: OnLineDataProvider, step):
 
         profits.append(back.current)
 
-    data_detail = DataDetail(
-        windows = provider.data_detail.windows,
-        minutes = provider.data_detail.minutes,
-        steps_ahead = provider.data_detail.steps_ahead,
-    )
-
-    trained_model = TrainedModel(
-        profit=np.average(profits),
-        profit_per_currency = models_profit,
-        model_detail=ModelDetail(model=model,data_detail=data_detail)
-    )
-       
+    trained_model.profit=np.average(profits)
+    trained_model.profit_per_currency=models_profit
     return trained_model
-
-def test_models(provider, get_all_models_factory, steps):
-    
-    score_board_by_step = {}
-
-    for step in steps:
-        print(f"Step {step}")
-        models_list = get_all_models_factory()
-        model_result = []
-        for idx in tqdm(range(len(models_list))):
-            model_creator = models_list[idx]
-            model = model_creator
-            #print(f"Trainning {model}")
-            train_by_step(model, step, provider)
-            
-            result = run_trial(model, provider, step)
-
-            model_result.append(result)
-        
-        score_board_by_step[step] = model_result
-    
-    model_rank = []
-    
-    def myFunc(e : TrainedModel):
-        return e.profit
-
-    for step_idx in score_board_by_step:
-        step_board = score_board_by_step[step_idx]
-        for result in step_board:
-            if (result.profit > 101):
-                model_rank.append(result)
-            
-    model_rank.sort(key=myFunc, reverse = True)
-    
-    return model_rank
 
 def list():
     models = get_classifiers()
     for i, item in enumerate(models):
         print(f"{i} - {item()}")
 
-def process(minutes, windows, steps, models_index_list):
+
+def train_list(process_list):
+    trained_model_list = []
+    for process in tqdm(process_list):
+        model_detail :ModelDetail = process
+        win = model_detail.data_detail.windows
+        minu = model_detail.data_detail.minutes
+        step = model_detail.data_detail.steps_ahead
+        model = model_detail.model
+        
+        provider = get_provider(minu, win)
+        
+        train_by_step(model, step, provider)
+        
+        #result = run_trial(model, provider, step)
+
+        trained_model = TrainedModel(
+            profit=100,
+            profit_per_currency=None,
+            model_detail=model_detail
+        )
+
+        trained_model_list.append(trained_model)
+    return trained_model_list
+
+
+def process(minutes_list, windows_list, steps_list, models_index_list, base_path):
     
     get_all_models_factory = lambda indexs_models: get_all_models(indexs_models)
 
-    process_list = []
+    trained_model_path_list = []
 
-    for minu in minutes:
-        for win in windows:
-            for step in steps:
+    for minu in minutes_list:
+        for win in windows_list:
+            process_list = []
+            trained_model_path = f"{base_path}_{minu}_{win}"
+            print(f"Training {trained_model_path}")
+            for steps_ahead in steps_list:
                 models_list = get_all_models_factory(models_index_list)
                 for idx in range(len(models_list)):
                     model_creator = models_list[idx]
                     model = model_creator
-                    process = {}
-                    process['window'] = win
-                    process['minutes'] = minu
-                    process['step'] = step
-                    process['model'] = model
-                    process_list.append(process)
+                    data_detail = DataDetail(
+                        windows = win,
+                        minutes = minu,
+                        steps_ahead = steps_ahead,
+                    )
+                    model_detail = ModelDetail(model=model,data_detail=data_detail)
+                    process_list.append(model_detail)
+            trained_model_list = train_list(process_list)
+            trained_model_path_list.append(trained_model_path)
+            dump(trained_model_list, trained_model_path)
     
-    min_results = []
-    for process in tqdm(process_list):
-        win = process['window'] 
-        minu = process['minutes']
-        step = process['step'] 
-        model = process['model'] 
-        
-        tec = TecAn(windows = win, windows_limit = 100)
-        sourceDataGenerator = SourceDataGenerator(tec = tec)
-        provider = get_online_data(
+    return trained_model_path_list
+    
+
+def get_provider(minu, win):
+    tec = TecAn(windows = win, windows_limit = 100)
+    sourceDataGenerator = SourceDataGenerator(tec = tec)
+    provider = get_online_data(
             minutes = minu, 
             source_data_generator=sourceDataGenerator, 
             load_from_disk = load_from_disk, 
             file_prefix=win
             )
         
-        train_by_step(model, step, provider)
-        result = run_trial(model, provider, step)
-
-        min_results.append(result)
-
-    return min_results
+    return provider
 
 def order_by_proft(e:TrainedModel):
     return e.profit
     #return e['models_profit_metric']['btcusd']
 
-def print_result(result:ModelDetail):
-    model = result.model
-    window = result.data_detail.windows
-    minutes = result.data_detail.minutes
-    step = result.data_detail.steps_ahead
-    print(f"Minutes={minutes} Window={window} Step={step}")
-    print(f"{model}")
 
 def start_model_search(minutes, windows, steps, models_index_list, model_path):
     
-    best_results = process(minutes, windows, steps, models_index_list)
-    total_results_count = len(best_results)
-    print(f"Results {total_results_count}")
+    trained_model_path_list = process(
+        minutes_list = minutes, 
+        windows_list = windows, 
+        steps_list = steps, 
+        models_index_list = models_index_list,
+        base_path = model_path
+        )
 
-    best_results.sort(key=order_by_proft, reverse = False)
+    for trained_model_path in trained_model_path_list:
+        print(f"Scoring {trained_model_path}")
+        trained_model_list = load(trained_model_path)
+        eval_models(trained_model_list)
+        for best in trained_model_list:
+            trained:TrainedModel = best
+            if (trained.profit < 100):
+                continue
+            print(trained)
+            print(f"")
 
-    saved_models = best_results[(-1 * int(total_results_count/2)):]
+        trained_model_list.sort(key=order_by_proft, reverse = False)
 
-    print(f"Results saved {len(saved_models)}")
-    dump(saved_models, model_path)
+        dump(trained_model_list, trained_model_path)
 
-    for best in best_results:
-        if (best.profit < 100):
-            continue
-        print_result(best)
-        #window = best['window']
-        #minutes = best['minutes']
-        #step = best['step']
-        #model_path = f'model/result_{window}_{minutes}_{step}'
-        #dump(best, model_path)
-        print(f"")
+def eval_models(models):
+    print(f"Recovering profits")
+    for model in tqdm(models):
+        trained_model :TrainedModel = model
+        minutes = trained_model.model_detail.data_detail.minutes
+        windows = trained_model.model_detail.data_detail.windows
+        steps_ahead = trained_model.model_detail.data_detail.steps_ahead
+        provider = get_provider(minu = minutes, win = windows)        
+        run_trial(trained_model, provider, steps_ahead)
 
 def add_arguments(parser):
     parser.add_argument('-l', '--list',

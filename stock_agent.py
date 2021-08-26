@@ -118,7 +118,8 @@ class BackTest():
 
 class ModelAgent():
     
-    def __init__(self, model = [],
+    def __init__(self,
+                model = [],
                 on_down = lambda bid, ask: bid,
                 on_up = lambda bid, ask: ask,
                 verbose = False,

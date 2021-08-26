@@ -11,8 +11,6 @@ from providers import *
 from eval_model import *
 from entities.models import *
 
-from model_search import print_result
-
 import numpy as np
 
 from joblib import dump, load
@@ -41,7 +39,7 @@ def load_results_from_path_list(path_list):
     for path in path_list:
         results = load_results_path(path)
         for result in results:
-            if(result.profit >= 101):
+            if(result.profit >= 100):
                 all_models.append(result)
         
     print(f"Pre selected: {len(all_models)}")
@@ -163,7 +161,6 @@ def get_best_model(currency_list, result_paths, timestamp, minutes_list, winner_
     backs = best['backs']
     for back in backs:
         backs[back].report()
-    print_result(winner)
     if (winner_path != None):
         dump(winner, winner_path)
     print()

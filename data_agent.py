@@ -104,6 +104,8 @@ class DataAgent():
         if (self.last_index == current_index):
             return
         
+        self.list = self.list[-1:]
+
         #print(current_index)
         self.last_index = current_index
                 
