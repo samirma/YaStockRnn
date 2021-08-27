@@ -1,5 +1,5 @@
 from data_util import *
-from data_agent import *
+from agents.data_agent import *
 from bitstamp import *
 from entities.entities import *
 

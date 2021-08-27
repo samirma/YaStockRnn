@@ -1,7 +1,6 @@
-from functools import cache
 from providers import OnLineDataProvider
-from stock_agent import *
-from data_agent import *
+from agents.data_agent import *
+from agents.stock_agent import *
 from data_util import *
 from providers import *
 from cache_providers import *
@@ -72,18 +71,32 @@ def eval_model(
                                     model = model,
                                     simulate_on_price = True)
     agent.save_history = True
-    add_hot_load(
-        minutes = minutes, 
-        win = win, 
-        total = hot_load_total, 
-        currency = currency, 
-        timestamp_end = time_list[0] - (60 * minutes), 
-        verbose = verbose, 
-        back = back, 
-        model_agent = model_agent, 
-        agent = agent,
-        cache = cache
-    )
+
+    #print("aaaa")
+    agent_cache_key = f"{minutes}_{win}"
+    if agent_cache_key in cache.agent_cache:
+        #print(f"Exists {agent_cache_key}")
+        cache_list, cache_data = cache.agent_cache[agent_cache_key]
+        agent.list = cache_list.copy()
+        agent.tec.data = cache_data.copy()
+    else:
+        #print(f"Creating cache for {agent_cache_key}")
+        add_hot_load(
+            minutes = minutes, 
+            win = win, 
+            total = hot_load_total, 
+            currency = currency, 
+            timestamp_end = time_list[0] - (60 * minutes), 
+            verbose = verbose, 
+            back = back, 
+            model_agent = model_agent, 
+            agent = agent,
+            cache = cache
+        )
+        cache.agent_cache[agent_cache_key] = (agent.list.copy(), agent.tec.data.copy())
+    #print(f"bbbb {agent.tec.data.copy()[-1]}")
+
+    model_agent.history
 
     back.reset()
 
@@ -92,7 +105,7 @@ def eval_model(
 
     agent.history = []
 
-    hard_limit = 30
+    hard_limit = 3000
     if (len(price_list) > hard_limit):
         limit = hard_limit
     else:

@@ -1,10 +1,10 @@
 
-from tec_an import *
 from data_util import *
-from sklearn_model_hyper import *
+#from sklearn_model_hyper import *
 from data_generator import *
-from data_agent import *
-from stock_agent import *
+from agents.data_agent import *
+from agents.stock_agent import *
+from agents.tec_an import TecAn
 from backtest import *
 from bitstamp import *
 from model import *
@@ -180,7 +180,7 @@ def get_all_models(indexs_models):
 
 
 
-def run_trial(trained_model: TrainedModel, provider: OnLineDataProvider, step):
+def run_trial(trained_model: TrainedModel, provider: OnLineDataProvider, step, cache: CacheProvider):
            
     reference_profit = {}
     models_profit = {}
@@ -188,8 +188,6 @@ def run_trial(trained_model: TrainedModel, provider: OnLineDataProvider, step):
     models_profit_metric = {}
 
     models_score = {}
-    
-    cache = CacheProvider(currency_list=provider.val_keys, verbose = False)
     
     profits = []
     for train_set in provider.val_keys:
@@ -341,17 +339,24 @@ def evaluate_trained_model_List(train_model_detail_list):
         suitable_model_list.sort(key=order_by_proft, reverse = False)
         print("Best model")
         print(suitable_model_list[-1])
-        #dump(suitable_model_list, trained_model_path)
+        dump(suitable_model_list, trained_model_path)
+        print(f"{trained_model_path} saved with {len(trained_model_path)}")
 
 def eval_models(models):
     print(f"Recovering profits")
+    trained_model :TrainedModel = models[0]
+    minutes = trained_model.model_detail.data_detail.minutes
+    windows = trained_model.model_detail.data_detail.windows
+    steps_ahead = trained_model.model_detail.data_detail.steps_ahead
+    provider = get_provider(minu = minutes, win = windows)     
+    cache = CacheProvider(currency_list=provider.val_keys, verbose = False)
     for model in tqdm(models):
         trained_model :TrainedModel = model
         minutes = trained_model.model_detail.data_detail.minutes
         windows = trained_model.model_detail.data_detail.windows
         steps_ahead = trained_model.model_detail.data_detail.steps_ahead
         provider = get_provider(minu = minutes, win = windows)        
-        run_trial(trained_model, provider, steps_ahead)
+        run_trial(trained_model, provider, steps_ahead, cache=cache)
 
 def add_arguments(parser):
     parser.add_argument('-l', '--list',

@@ -1,6 +1,6 @@
 from data_generator import *
 from bitstamp import *
-from data_agent import *
+from agents.data_agent import *
 from providers import OnLineDataProvider
 from source_data_generator import *
 from tqdm.notebook import tqdm

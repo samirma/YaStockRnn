@@ -4,6 +4,7 @@ import datetime as dt
 class CacheProvider():
     def __init__(self, currency_list, verbose):
         self.cache = {}
+        self.agent_cache = {}
         self.currency_list = currency_list
         self.verbose = verbose
 

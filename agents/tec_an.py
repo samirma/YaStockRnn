@@ -3,7 +3,7 @@ from ta.trend import *
 from ta.momentum import *
 from ta.volume import *
 from ta.volatility import *
-from ta import add_all_ta_features, add_trend_ta, add_volume_ta, add_volatility_ta, add_momentum_ta, add_others_ta
+#from ta import add_all_ta_features, add_trend_ta, add_volume_ta, add_volatility_ta, add_momentum_ta, add_others_ta
 import numpy as np
 
 

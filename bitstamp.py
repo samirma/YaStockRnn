@@ -8,7 +8,7 @@ import time
 import requests
 import uuid
 import datetime
-from stock_agent import BackTest
+from agents.stock_agent import BackTest
 from configparser import ConfigParser
 import uuid
 from urllib.parse import urlencode
