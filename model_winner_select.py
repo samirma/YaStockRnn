@@ -33,29 +33,8 @@ def load_results_path(results_path):
         saved_models = []
     return saved_models
 
-def load_results_from_path_list(path_list):
-    all_models = []
-
-    for path in path_list:
-        results = load_results_path(path)
-        for result in results:
-            if(result.profit >= 100):
-                all_models.append(result)
-        
-    print(f"Pre selected: {len(all_models)}")
-    return all_models
-
-
-def get_scorecoard(
-    currency_list, 
-    all_models, 
-    minutes_list, 
-    cache :CacheProvider,
-    time_start,
-    time_end):
-
-    scoreboard = []
-
+def eval_by_time(currency_list, minutes_list, cache, time_start, time_end, all_models):
+    evaluated_models = []
     for best in tqdm(all_models):
         trained_model :TrainedModel = best 
         model_detail = trained_model.model_detail
@@ -71,45 +50,102 @@ def get_scorecoard(
             time_end = (time_end - (minutes * 60))
 
         online = cache.get_provider(
-            minutes = minutes,
-            windows = windows,
-            val_start = time_start,
-            val_end = time_end
-        )
-        
+                minutes = minutes,
+                windows = windows,
+                val_start = time_start,
+                val_end = time_end
+            )
+            
         profits = []
         backs = {}
         score = {}
-        
+            
         has_negative = False
-        
+            
         for currency in currency_list:
-
             back, metrics = eval_model(
-                model=model_detail.model,
-                currency=currency,
-                step=step,
-                provider=online,
-                verbose=False,
-                cache = cache
-            )
+                    model=model_detail.model,
+                    currency=currency,
+                    step=step,
+                    provider=online,
+                    verbose=False,
+                    cache = cache
+                )
             back_profit = back.get_profit()
             profits.append(back_profit)
             backs[currency] = back
-            #print(f"{train_set} -> {back_profit}")
+                #print(f"{train_set} -> {back_profit}")
             if (back_profit <= 0 and not has_negative):
                 has_negative = True
             
-        score['profit'] = np.average(profits)
-        score['backs'] = backs
-        score['model_detail'] = model_detail
-        scoreboard.append(score)
+        profit = np.average(profits)
+        if (profit > 0):
+            score['profit'] = profit
+            score['backs'] = backs
+            score['model_detail'] = model_detail
+            evaluated_models.append(score)
+    return evaluated_models
+
+
+def recover_evalueted_list(minutes_list, all_models):
+    evaluated_models = []
+    for best in tqdm(all_models):
+        trained_model :TrainedModel = best 
+        model_detail = trained_model.model_detail
+        windows = trained_model.model_detail.data_detail.windows
+        minutes = trained_model.model_detail.data_detail.minutes
+        step = trained_model.model_detail.data_detail.steps_ahead
+
+        if minutes not in minutes_list :
+            continue
+
+        score = {}
+        
+        profit = trained_model.profit
+        if (profit > 0 or profit != 100):
+            score['profit'] = profit
+            score['backs'] = []
+            score['model_detail'] = model_detail
+            evaluated_models.append(score)
+    return evaluated_models
+
+
+def get_scorecoard(
+    currency_list, 
+    result_paths, 
+    minutes_list, 
+    cache :CacheProvider,
+    time_start,
+    time_end,
+    use_trained_profit):
+
+    scoreboard = []
+
+    for path in result_paths:
+        print(f"Evaluating {path}")
+        all_models = load_results_path(path)
+
+        evaluated_models = []
+        if (use_trained_profit):
+            evaluated_models = recover_evalueted_list(minutes_list, all_models)
+        else:
+            evaluated_models = eval_by_time(currency_list, minutes_list, cache, time_start, time_end, all_models)
+
+        
+        if (len(evaluated_models) > 0):
+            evaluated_models.sort(key=order, reverse = False)
+            print(evaluated_models[-1])
+            scoreboard.append(evaluated_models[-1])
+            scoreboard.sort(key=order, reverse = False)
+            #count = len(scoreboard)
+            scoreboard = scoreboard[-5:]
+        else:
+            print("No suitable model was found")
 
     return scoreboard
 
-def get_best_model(currency_list, result_paths, timestamp, minutes_list, winner_path):
 
-    all_models = load_results_from_path_list(result_paths)
+def get_best_model(currency_list, result_paths, timestamp, minutes_list, winner_path, use_trained_profit):
 
     cache = CacheProvider(
         currency_list=currency_list,
@@ -121,11 +157,12 @@ def get_best_model(currency_list, result_paths, timestamp, minutes_list, winner_
 
     scoreboard = get_scorecoard(
         currency_list = currency_list, 
-        all_models = all_models, 
+        result_paths = result_paths, 
         minutes_list = minutes_list, 
         cache = cache,
         time_start = time_start,
-        time_end = time_end
+        time_end = time_end,
+        use_trained_profit = use_trained_profit
         )
 
     selected_count = len(scoreboard)
@@ -206,6 +243,9 @@ def add_arguments_winner(parser):
                 action="store"
                 )
 
+    parser.add_argument('--use_trained_profit', dest="use_trained_profit", default=True, action=argparse.BooleanOptionalAction)
+
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
@@ -220,12 +260,14 @@ if __name__ == '__main__':
     print(f"currency_list: {args.currency_list}")
     print(f"Result_paths: {args.result_paths_list}")
     print(f"winner_path: {args.winner_path}")
+    print(f"use_trained_profit --use_trained_profit: {args.use_trained_profit}")
 
     get_best_model(
         minutes_list=args.minutes_list,
         result_paths=args.result_paths_list,
         currency_list=args.currency_list,
         timestamp = timestamp,
-        winner_path = args.winner_path
+        winner_path = args.winner_path,
+        use_trained_profit = args.use_trained_profit
     )
 

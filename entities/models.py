@@ -12,4 +12,4 @@ class TrainedModel():
         self.profit_per_currency = profit_per_currency
 
     def __str__(self):
-        return f"TrainedModel (profit = {self.profit}, model_detail = {self.model_detail})"
+        return f"TrainedModel (profit = {self.profit}, profit_per_currency = {self.profit_per_currency}, model_detail = {self.model_detail})"

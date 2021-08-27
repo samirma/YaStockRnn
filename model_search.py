@@ -217,7 +217,7 @@ def run_trial(trained_model: TrainedModel, provider: OnLineDataProvider, step):
         models_score[key] = score
         models_profit_metric[key] = back.get_profit() / reference.get_profit()
 
-        profits.append(back.current)
+        profits.append(back.get_profit())
 
     trained_model.profit=np.average(profits)
     trained_model.profit_per_currency=models_profit
@@ -254,35 +254,39 @@ def train_list(process_list):
     return trained_model_list
 
 
-def process(minutes_list, windows_list, steps_list, models_index_list, base_path):
+def get_train_detail_list(minutes_list, windows_list, base_path):
+    train_model_detail_list = []
+    for minutes in minutes_list:
+        for win in windows_list:
+            trained_model_path = f"{base_path}_{minutes}_{win}"
+            data = (minutes, win, trained_model_path)
+            train_model_detail_list.append(data)
+    return train_model_detail_list
+
+def train_detail_list(steps_list, models_index_list, train_model_detail_list):
     
     get_all_models_factory = lambda indexs_models: get_all_models(indexs_models)
 
-    trained_model_path_list = []
+    for data in train_model_detail_list:
+        minutes, win, trained_model_path = data
+        process_list = []
+        trained_model_path = f"{trained_model_path}_{minutes}_{win}"
+        print(f"Training {trained_model_path}")
+        for steps_ahead in steps_list:
+            models_list = get_all_models_factory(models_index_list)
+            for idx in range(len(models_list)):
+                model_creator = models_list[idx]
+                model = model_creator
+                data_detail = DataDetail(
+                    windows = win,
+                    minutes = minutes,
+                    steps_ahead = steps_ahead,
+                )
+                model_detail = ModelDetail(model=model,data_detail=data_detail)
+                process_list.append(model_detail)
+        trained_model_list = train_list(process_list)
+        dump(trained_model_list, trained_model_path)
 
-    for minu in minutes_list:
-        for win in windows_list:
-            process_list = []
-            trained_model_path = f"{base_path}_{minu}_{win}"
-            print(f"Training {trained_model_path}")
-            for steps_ahead in steps_list:
-                models_list = get_all_models_factory(models_index_list)
-                for idx in range(len(models_list)):
-                    model_creator = models_list[idx]
-                    model = model_creator
-                    data_detail = DataDetail(
-                        windows = win,
-                        minutes = minu,
-                        steps_ahead = steps_ahead,
-                    )
-                    model_detail = ModelDetail(model=model,data_detail=data_detail)
-                    process_list.append(model_detail)
-            trained_model_list = train_list(process_list)
-            trained_model_path_list.append(trained_model_path)
-            dump(trained_model_list, trained_model_path)
-    
-    return trained_model_path_list
-    
 
 def get_provider(minu, win):
     tec = TecAn(windows = win, windows_limit = 100)
@@ -301,30 +305,43 @@ def order_by_proft(e:TrainedModel):
     #return e['models_profit_metric']['btcusd']
 
 
-def start_model_search(minutes, windows, steps, models_index_list, model_path):
-    
-    trained_model_path_list = process(
+def start_model_search(minutes, windows, steps, models_index_list, model_path, just_evaluate_model):
+
+    train_model_detail_list = get_train_detail_list(
         minutes_list = minutes, 
-        windows_list = windows, 
-        steps_list = steps, 
-        models_index_list = models_index_list,
-        base_path = model_path
+        windows_list = windows,
+        base_path = model_path,
+    )
+
+    if (not just_evaluate_model):
+        train_detail_list(
+            steps_list = steps, 
+            models_index_list = models_index_list,
+            train_model_detail_list = train_model_detail_list
+            )
+
+    evaluate_trained_model_List(
+        train_model_detail_list = train_model_detail_list
         )
 
-    for trained_model_path in trained_model_path_list:
+def evaluate_trained_model_List(train_model_detail_list):
+    for data in train_model_detail_list:
+        minutes, win, trained_model_path = data
         print(f"Scoring {trained_model_path}")
         trained_model_list = load(trained_model_path)
         eval_models(trained_model_list)
+        suitable_model_list = []
         for best in trained_model_list:
             trained:TrainedModel = best
-            if (trained.profit < 100):
+            if (trained.profit <= 0):
                 continue
+            suitable_model_list.append(trained)
             print(trained)
             print(f"")
-
-        trained_model_list.sort(key=order_by_proft, reverse = False)
-
-        dump(trained_model_list, trained_model_path)
+        suitable_model_list.sort(key=order_by_proft, reverse = False)
+        print("Best model")
+        print(suitable_model_list[-1])
+        #dump(suitable_model_list, trained_model_path)
 
 def eval_models(models):
     print(f"Recovering profits")
@@ -386,6 +403,9 @@ def add_arguments(parser):
                 default='model/all_results',
                 )
 
+    parser.add_argument('--just_evaluate_model', dest="just_evaluate_model", default=False, action=argparse.BooleanOptionalAction)
+
+
 if __name__ == '__main__':
 
     steps = [1]
@@ -410,6 +430,7 @@ if __name__ == '__main__':
         print(f"steps: {args.steps}")
         print(f"models_index_list: {args.models_index_list}")
         print(f"model_path: {args.model_path}")
+        print(f"just_evaluate_model --just_evaluate_model: {args.just_evaluate_model}")
 
         classifiers_temp = get_classifiers()
         
@@ -424,6 +445,7 @@ if __name__ == '__main__':
             minutes=args.minutes,
             models_index_list=args.models_index_list,
             model_path=args.model_path,
+            just_evaluate_model = args.just_evaluate_model
         )
 
     

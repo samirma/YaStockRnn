@@ -92,7 +92,13 @@ def eval_model(
 
     agent.history = []
 
-    for idx in range(len(price_list)):
+    hard_limit = 30
+    if (len(price_list) > hard_limit):
+        limit = hard_limit
+    else:
+        limit = len(price_list)
+
+    for idx in range(limit):
         #if ((idx) != len(agent.history)):
         #    print(f"{idx}) {len(agent.history)} - {len(price_list)}")
         #    20/0
@@ -100,7 +106,7 @@ def eval_model(
         time = time_list[idx]
         order = [[f"{price}", f"{price}"]]
         amount = 0.0
-        #print(f"{time} - {price} ")
+        #print(f"{idx} - {time} - {price} ")
         agent.process_data(price, amount, time, order, order)
 
     back.on_down(back.buy_price, back.buy_price)
@@ -114,17 +120,14 @@ def eval_model(
         histoty_times.append(data.timestamp)
         preds.append(pred)
 
-    #print(f"{len(price_list)} - preds: {len(preds)}")
-    #print(f"agent.history{len(agent.history)}")
-    #print(histoty_times[:10])
-    #print(time_list[:10])
+    yy = y[:limit]
 
     metrics = {}
-    metrics["recall"] = recall_score(y, preds)
-    metrics["precision"] = precision_score(y, preds)
-    metrics["f1"] = f1_score(y, preds)
-    metrics["accuracy"] = accuracy_score(y, preds)
-    metrics["roc_auc"] = roc_auc_score(y, preds)
+    metrics["recall"] = recall_score(yy, preds)
+    metrics["precision"] = precision_score(yy, preds, zero_division=1)
+    metrics["f1"] = f1_score(yy, preds)
+    metrics["accuracy"] = accuracy_score(yy, preds)
+    metrics["roc_auc"] = roc_auc_score(yy, preds)
 
     #back.report()
 

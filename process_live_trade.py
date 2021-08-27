@@ -123,7 +123,7 @@ def start_process_by_result(result: ModelDetail, currency, simulate_on_price, ho
 
     bt = Bitstamp(live, currency = currency)
 
-    init_raw_process(currency, minutes, timestamp, agent, stock)
+    init_raw_process(currency, minutes, int(datetime.timestamp((datetime.now()))), agent, stock)
 
     while (True):
         bt.connect()
@@ -149,6 +149,7 @@ if __name__ == '__main__':
     print(f"simulate_on_price --p: {args.simulate_on_price}")
     print(f"currency --c: {args.currency}")
     print(f"hot_load --hot: {args.hot_load}")
+    print(f"use_trained_profit --use_trained_profit: {args.use_trained_profit}")
 
     if (args.result_paths_list != None and len(args.result_paths_list) > 0):
         print(f"minutes: {args.minutes_list}")
@@ -162,7 +163,8 @@ if __name__ == '__main__':
             result_paths=args.result_paths_list,
             currency_list=args.currency_list,
             timestamp = timestamp,
-            winner_path = None
+            winner_path = None,
+            use_trained_profit = args.use_trained_profit
         )
 
         print(f"Winner found {winner}")
