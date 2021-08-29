@@ -53,7 +53,7 @@ def eval_model(
     verbose, 
     provider: OnLineDataProvider,
     cache: CacheProvider,
-    hot_load_total = 100):
+    hot_load_total):
 
     valX, valY, time_list = provider.load_val_data(currency)
     
@@ -93,10 +93,9 @@ def eval_model(
             agent = agent,
             cache = cache
         )
-        cache.agent_cache[agent_cache_key] = (agent.list.copy(), agent.tec.data.copy())
-    #print(f"bbbb {agent.tec.data.copy()[-1]}")
-
-    model_agent.history
+        #cache.agent_cache[agent_cache_key] = (agent.list.copy(), agent.tec.data.copy())
+    print(f"bbbb {agent.tec.data.copy()[-1]}")
+    #print(model_agent.history[-1])
 
     back.reset()
 
@@ -105,7 +104,7 @@ def eval_model(
 
     agent.history = []
 
-    hard_limit = 3000
+    hard_limit = 600
     if (len(price_list) > hard_limit):
         limit = hard_limit
     else:
@@ -142,7 +141,7 @@ def eval_model(
     metrics["accuracy"] = accuracy_score(yy, preds)
     metrics["roc_auc"] = roc_auc_score(yy, preds)
 
-    #back.report()
+    back.report()
 
     return back, metrics    
 

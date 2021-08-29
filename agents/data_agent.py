@@ -21,7 +21,7 @@ class TacProcess():
             list.append(tec.iloc[index])
         return list
 
-    def add_tacs_realtime(self, list, price, amount, tec):
+    def add_tacs_realtime(self, list, price, amount, tec: TecAn):
         list = []
         list.extend(tec.add_ta(price, amount))
         self.old_price = price

@@ -28,3 +28,12 @@ class ModelDetail():
 
     def __str__(self):
         return f"ModelDetail (model = {self.model}, data_detail = {self.data_detail})"
+
+
+def print_data_detail(data_detail: DataDetail):
+    print(f"windows = {data_detail.windows} minutes = {data_detail.minutes} steps_ahead = {data_detail.steps_ahead}")
+
+
+def print_model_detail(model_detail: ModelDetail):
+    print_data_detail(model_detail.data_detail)
+    print(f"{model_detail.model}")

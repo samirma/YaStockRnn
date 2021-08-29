@@ -1,7 +1,7 @@
-from data_agent import *
-from stock_agent import *
+from agents.data_agent import *
+from agents.stock_agent import *
 from joblib import *
-from tec_an import *
+from agents.tec_an import *
 from bitstamp import *
 from model_winner_select import *
 
@@ -64,7 +64,7 @@ def init_raw_process(
         end=timestamp,
         step=step,
         limit=100,
-        verbose=True
+        verbose=False
         )
     
     for data in page:
@@ -166,8 +166,6 @@ if __name__ == '__main__':
             winner_path = None,
             use_trained_profit = args.use_trained_profit
         )
-
-        print(f"Winner found {winner}")
 
         start_process_by_result(
             result = winner, 

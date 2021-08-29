@@ -4,7 +4,7 @@ from tqdm.notebook import tqdm
 #from tqdm import tqdm_notebook as tqdm
 from data_generator import DataGenerator
 from state_util import StateUtil
-from tec_an import TecAn
+from agents.tec_an import TecAn
 import numpy as np
 from data_util import *
 import threading

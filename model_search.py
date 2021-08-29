@@ -219,6 +219,7 @@ def run_trial(trained_model: TrainedModel, provider: OnLineDataProvider, step, c
 
     trained_model.profit=np.average(profits)
     trained_model.profit_per_currency=models_profit
+    trained_model.metrics=models_score
     return trained_model
 
 def list():
@@ -268,7 +269,6 @@ def train_detail_list(steps_list, models_index_list, train_model_detail_list):
     for data in train_model_detail_list:
         minutes, win, trained_model_path = data
         process_list = []
-        trained_model_path = f"{trained_model_path}_{minutes}_{win}"
         print(f"Training {trained_model_path}")
         for steps_ahead in steps_list:
             models_list = get_all_models_factory(models_index_list)
@@ -284,6 +284,7 @@ def train_detail_list(steps_list, models_index_list, train_model_detail_list):
                 process_list.append(model_detail)
         trained_model_list = train_list(process_list)
         dump(trained_model_list, trained_model_path)
+        print(f"Saved {trained_model_path} {len(trained_model_list)}")
 
 
 def get_provider(minu, win):
@@ -334,13 +335,28 @@ def evaluate_trained_model_List(train_model_detail_list):
             if (trained.profit <= 0):
                 continue
             suitable_model_list.append(trained)
-            print(trained)
-            print(f"")
+
         suitable_model_list.sort(key=order_by_proft, reverse = False)
-        print("Best model")
-        print(suitable_model_list[-1])
+        if(len(suitable_model_list) > 0):
+            suitable_model_list = suitable_model_list[-5:]
+            for best in suitable_model_list:
+                trained:TrainedModel = best
+                if (trained.profit <= 0):
+                    continue
+                print(trained.profit)
+                print(trained.model_detail.model)
+                print(trained.metrics)
+                print(f"")
+
+            print("##### Best model #####")
+            winner:TrainedModel = suitable_model_list[-1]
+            print(f"{winner.profit} -> {winner.model_detail.data_detail}")
+            print(winner.model_detail.model)
+            print(winner.metrics)
+            print(f"{trained_model_path} saved with {len(suitable_model_list)}")
+        else:
+            print("No suitable model found")
         dump(suitable_model_list, trained_model_path)
-        print(f"{trained_model_path} saved with {len(trained_model_path)}")
 
 def eval_models(models):
     print(f"Recovering profits")

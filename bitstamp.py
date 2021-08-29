@@ -35,6 +35,20 @@ class LiveTrader(BackTest):
         response = _query(self.userinfo, route, {})
         return response
 
+    def instant_buy(self, currency_pair, amount):
+        route = f'api/v2/buy/instant/{currency_pair}/'
+        payload = {}
+        payload["amount"] = amount
+        response = _query(self.userinfo, route, payload)
+        return response
+
+    def instant_sell(self, currency_pair, amount):
+        route = f'api/v2/sell/instant/{currency_pair}/'
+        payload = {}
+        payload["amount"] = amount
+        response = _query(self.userinfo, route, payload)
+        return response
+
     def init(self):
         config_object = ConfigParser()
         config_object.read("config.ini")

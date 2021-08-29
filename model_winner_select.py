@@ -1,9 +1,9 @@
-from tec_an import *
+from agents.tec_an import *
 from data_util import *
 from sklearn_model_hyper import *
 from data_generator import *
-from data_agent import *
-from stock_agent import *
+from agents.data_agent import *
+from agents.stock_agent import *
 from backtest import *
 from bitstamp import *
 from model import *
@@ -20,6 +20,18 @@ from tqdm import tqdm
 
 import argparse
 
+def print_evalueted_model(score):
+    profit = score['profit']
+    backs = score['backs']
+    result = score['model_detail']
+    print(profit)
+    print_model_detail(result)
+    for key in backs:
+        back = backs[key]
+        #backs[back].report()
+        trades = f"{back.positive_trades} - {back.negative_trades}"
+        print(f"{key} -> {back.current} | {trades}")
+    
 
 def order(e):
     return e['profit']
@@ -49,7 +61,7 @@ def eval_by_time(currency_list, minutes_list, cache, time_start, time_end, all_m
         if (current_time < (time_end + (minutes * 60))):
             time_end = (time_end - (minutes * 60))
 
-        online = cache.get_provider(
+        online:OnLineDataProvider = cache.get_provider(
                 minutes = minutes,
                 windows = windows,
                 val_start = time_start,
@@ -63,13 +75,16 @@ def eval_by_time(currency_list, minutes_list, cache, time_start, time_end, all_m
         has_negative = False
             
         for currency in currency_list:
+            print(model_detail.data_detail)
+            print(online.data_detail)
             back, metrics = eval_model(
                     model=model_detail.model,
                     currency=currency,
                     step=step,
                     provider=online,
                     verbose=False,
-                    cache = cache
+                    cache = cache,
+                    hot_load_total=500
                 )
             back_profit = back.get_profit()
             profits.append(back_profit)
@@ -134,7 +149,7 @@ def get_scorecoard(
         
         if (len(evaluated_models) > 0):
             evaluated_models.sort(key=order, reverse = False)
-            print(evaluated_models[-1])
+            print_evalueted_model(evaluated_models[-1])
             scoreboard.append(evaluated_models[-1])
             scoreboard.sort(key=order, reverse = False)
             #count = len(scoreboard)
@@ -179,15 +194,7 @@ def get_best_model(currency_list, result_paths, timestamp, minutes_list, winner_
 
     for score in scoreboard[-3:]:
         profit = score['profit']
-        backs = score['backs']
-        result = score['model_detail']
-        print(result)
-        for key in backs:
-            back = backs[key]
-            #backs[back].report()
-            trades = f"{back.positive_trades} - {back.negative_trades}"
-            print(f"{key} -> {back.current} | {trades}")
-        
+        print_evalueted_model(score)
         print()
         filtered.append(profit)
     
@@ -195,6 +202,7 @@ def get_best_model(currency_list, result_paths, timestamp, minutes_list, winner_
 
     winner = best['model_detail']
     print(f"Winner for {currency_list} -> {best['profit']}")
+    print_model_detail(winner)
     backs = best['backs']
     for back in backs:
         backs[back].report()
