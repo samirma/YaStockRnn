@@ -9,6 +9,7 @@ import numpy as np
 from joblib import dump, load
 from imblearn.over_sampling import RandomOverSampler
 from imblearn.under_sampling import RandomUnderSampler 
+from collections import Counter
 
 def get_online_data(minutes, source_data_generator: SourceDataGenerator, load_from_disk, file_prefix = ""):
     
@@ -226,7 +227,7 @@ def get_y_data(ohlc, shift = -1):
     
     for key in keys:
         #combined_data[f'direction{key}'] = np.where(combined_data[key] < 1, 1, 0)
-        combined_data[f'direction{key}'] = np.where(combined_data[key] < 0.999, 1, 0)
+        combined_data[f'direction{key}'] = np.where(combined_data[key] < 0.998, 1, 0)
 
     
     combined_data[f'direction'] = combined_data[f'direction{keys[0]}']
@@ -240,8 +241,8 @@ def get_y_data(ohlc, shift = -1):
 
 def get_sequencial_data(trainX, trainY, step):
     y = get_y_data(
-        pd.DataFrame(trainY, columns = ['Close']), 
-        (-1 * step)
+        ohlc = pd.DataFrame(trainY, columns = ['Close']), 
+        shift = (-1 * step)
     )
     #x, y, closed_prices = series_to_supervised(trainX, n_in=2), y, trainY
     x, y, closed_prices = trainX, y, trainY

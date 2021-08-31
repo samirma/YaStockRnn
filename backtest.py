@@ -13,12 +13,8 @@ def get_max_profit(x, y, closed_prices, step):
 
 
 def prepare_train_data(trainX, trainY, step):
-    y = get_y_data(
-        pd.DataFrame(trainY, columns = ['Close']), 
-        (-1 * step)
-    )
-    #x, y = series_to_supervised(trainX, n_in=2), y
-    x, y = get_balanced_set(trainX, y)
+    x, y, closed_prices = get_sequencial_data(trainX, trainY, step)
+    #x, y = get_balanced_set(x, y)
     return x, y
     #return shuffle(x, y, random_state = 10)
 

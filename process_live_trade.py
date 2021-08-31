@@ -53,10 +53,11 @@ def start_process_index(results_path, index, currency, simulate_on_price, hot_lo
 def init_raw_process(
     currency, 
     minutes, 
-    timestamp, 
     agent :DataAgent, 
-    model_agent:ModelAgent
+    model_agent :ModelAgent
     ):
+    timestamp = int(datetime.timestamp((datetime.now())))
+
     step = minutes*60
     page = load_bitstamp_ohlc(
         currency_pair=currency,
@@ -86,7 +87,7 @@ def init_raw_process(
             )
         #print(f"Pos {agent.last_index} -> {agent.last_timestamp}")
         #print(f"Init reference_date: {reference_date} recovered_date: {recovered_date} ")
-        model_agent.enabled = True
+    #print(f"Last index: {agent.last_index}")
 
 def start_process_by_result(result: ModelDetail, currency, simulate_on_price, hot_load):
     model = result.model
@@ -123,7 +124,7 @@ def start_process_by_result(result: ModelDetail, currency, simulate_on_price, ho
 
     bt = Bitstamp(live, currency = currency)
 
-    init_raw_process(currency, minutes, int(datetime.timestamp((datetime.now()))), agent, stock)
+    init_raw_process(currency, minutes, agent, stock)
 
     while (True):
         bt.connect()

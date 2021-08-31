@@ -48,43 +48,16 @@ from tqdm import tqdm
 
 import argparse
 
-#train_start_list = [1622502000, 1590966000, 1559343600, 1580515200, 1612137600]
-train_start_list = [1622502000, 1590966000, 1559343600, 1527807600, 1517443200, 1548979200, 1580515200, 1612137600]
-#train_start_list = [1612137600]
-train_keys = ["btcusd", "ethusd", "bchbtc"]
-#train_keys = ["bchbtc"]
-val_start = 1626340500
-val_end = 1626369600
+
 load_from_disk = True
 
 # '2Min'
 
 def get_online_data(minutes, source_data_generator, load_from_disk, file_prefix = ""):
     
-    online = OnLineDataProvider(
-                 source_data_generator = source_data_generator,
-                 minutes = minutes,
-                 train_keys = train_keys,
-                 train_limit = 1000,
-                 val_limit = 1000,
-                 val_keys = ["btcusd"],
-                 val_start = val_start,
-                 val_end = val_end,
-                 train_start_list = train_start_list,
-                 verbose = True
-    )
-
     online_path = f'data/online{file_prefix}_{minutes}'
-    
-    if (load_from_disk):
-        online = load(online_path)    
-    else:
-        #online.load_train_cache()
-        online.load_cache()
-        online.sourceDataGenerator = None
-        dump(online, online_path)
-    
-    return online
+        
+    return load(online_path)  
 
 def get_classifiers():
     clss = [

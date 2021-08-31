@@ -4,9 +4,8 @@ from ta.trend import *
 from ta.momentum import *
 from ta.volume import *
 from ta.volatility import *
-from ta import add_all_ta_features, add_trend_ta, add_volume_ta, add_volatility_ta, add_momentum_ta, add_others_ta
-import numpy as np
 from agents.tec_an import TecAn
+import datetime as dt
 
 
 class TacProcess():
@@ -57,11 +56,10 @@ class DataAgent():
         self.last_price = -1 
         self.last_amount = -1
         self.last_timestamp = -1
-        self.last_index = 1
+        self.last_index = -1
         self.on_new_data = on_new_data
         self.on_state = on_state
         self.on_closed_price = on_closed_price
-        self.on_new_data_count = 0
         self.verbose = verbose
         self.history = []
         self.save_history = save_history
@@ -103,14 +101,20 @@ class DataAgent():
 
         if (self.last_index == current_index):
             return
-        
+
+        if (self.last_index != -1):
+            timeframe = self.minutes * 60
+            current_timestamp = int(current_index.timestamp())
+            last_timestamp = int(self.last_index.timestamp())
+            diff = (current_timestamp - last_timestamp)
+            if (diff != timeframe):
+                error_msg = f"Diff {diff} Timeframe: {timeframe} last_index: {self.last_index} current_index: {current_index}"
+                raise Exception(error_msg)
+
         self.list = self.list[-1:]
 
-        #print(current_index)
         self.last_index = current_index
                 
-        self.on_new_data_count = self.on_new_data_count + 1
-        
         self.on_new_price(timestamp, price, amount)
         
     def process_data_input(self, price, amount, timestamp):
@@ -154,6 +158,10 @@ class DataAgent():
     def report(self):
         for data in self.history:
             print(f"{data.timestamp} - {data.price} - {data.is_up}")
+
+    def log(self, message):
+        if (self.verbose):
+            print(f'{dt.datetime.now()} BackTest: {message}')
 
 
 class AgentHistory():

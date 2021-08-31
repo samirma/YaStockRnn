@@ -25,8 +25,8 @@ class BackTest():
         self.current = self.initial_value
         self.holding = 0
         self.buy_price = 0
-        self.positive_trades = 0
-        self.negative_trades = 0
+        self.positive_trades = []
+        self.negative_trades = []
         
         
     def on_state(self):
@@ -73,7 +73,7 @@ class BackTest():
     def report(self):
         percentage = self.get_profit()
         print(f'{percentage}% -> {self.current}')
-        print(f'Positive: {self.positive_trades} Negative: {self.negative_trades}')
+        print(f'Positive: {len(self.positive_trades)}({np.average(self.positive_trades)}) Negative: {len(self.negative_trades)}({np.average(self.negative_trades)})')
         
     def get_profit(self):
         percentage = ((self.current*100)/self.initial_value) - 100
@@ -98,10 +98,10 @@ class BackTest():
         positive, profit = self.is_profit(bid)
 
         if (positive):
-            self.positive_trades += 1
+            self.positive_trades.append(profit)
             result = f"PROFIT {profit}"
         else:
-            self.negative_trades += 1
+            self.negative_trades.append(profit)
             result = f"LOSS {profit}"
         
         self.log(f'SOLD >>>> Result: {result} total: {self.current}')

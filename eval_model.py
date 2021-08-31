@@ -5,6 +5,7 @@ from data_util import *
 from providers import *
 from cache_providers import *
 from sklearn.metrics import *
+from collections import Counter
 
 def add_hot_load(minutes, 
                 win, 
@@ -86,25 +87,23 @@ def eval_model(
             win = win, 
             total = hot_load_total, 
             currency = currency, 
-            timestamp_end = time_list[0] - (60 * minutes), 
+            timestamp_end = time_list[0], #+ (60 * minutes), 
             verbose = verbose, 
             back = back, 
             model_agent = model_agent, 
             agent = agent,
             cache = cache
         )
-        #cache.agent_cache[agent_cache_key] = (agent.list.copy(), agent.tec.data.copy())
-    print(f"bbbb {agent.tec.data.copy()[-1]}")
+        cache.agent_cache[agent_cache_key] = (agent.list.copy(), agent.tec.data.copy())
+    #print(f"bbbb {agent.tec.data.copy()[-1]}")
     #print(model_agent.history[-1])
-
-    back.reset()
 
     model_agent.verbose = verbose
     back.verbose = verbose
 
     agent.history = []
 
-    hard_limit = 600
+    hard_limit = 2000
     if (len(price_list) > hard_limit):
         limit = hard_limit
     else:
@@ -134,14 +133,15 @@ def eval_model(
 
     yy = y[:limit]
 
-    metrics = {}
-    metrics["recall"] = recall_score(yy, preds)
-    metrics["precision"] = precision_score(yy, preds, zero_division=1)
-    metrics["f1"] = f1_score(yy, preds)
-    metrics["accuracy"] = accuracy_score(yy, preds)
-    metrics["roc_auc"] = roc_auc_score(yy, preds)
+    counter = Counter(preds)
 
-    back.report()
+    metrics = {}
+    if (len(counter) > 1):
+        metrics["recall"] = recall_score(yy, preds)
+        metrics["precision"] = precision_score(yy, preds, zero_division=1)
+        metrics["f1"] = f1_score(yy, preds)
+        metrics["accuracy"] = accuracy_score(yy, preds)
+        metrics["roc_auc"] = roc_auc_score(yy, preds)
 
     return back, metrics    
 

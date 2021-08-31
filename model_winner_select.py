@@ -29,7 +29,7 @@ def print_evalueted_model(score):
     for key in backs:
         back = backs[key]
         #backs[back].report()
-        trades = f"{back.positive_trades} - {back.negative_trades}"
+        trades = f"{len(back.positive_trades)} - {len(back.negative_trades)}"
         print(f"{key} -> {back.current} | {trades}")
     
 
@@ -75,8 +75,6 @@ def eval_by_time(currency_list, minutes_list, cache, time_start, time_end, all_m
         has_negative = False
             
         for currency in currency_list:
-            print(model_detail.data_detail)
-            print(online.data_detail)
             back, metrics = eval_model(
                     model=model_detail.model,
                     currency=currency,
