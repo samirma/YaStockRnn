@@ -45,7 +45,8 @@ def load_results_path(results_path):
         saved_models = []
     return saved_models
 
-def eval_by_time(currency_list, minutes_list, cache, time_start, time_end, all_models):
+def eval_by_time(currency_list, minutes_list, cache, time_start, time_end, all_models,
+            stop_loss):
     evaluated_models = []
     for best in tqdm(all_models):
         trained_model :TrainedModel = best 
@@ -76,6 +77,7 @@ def eval_by_time(currency_list, minutes_list, cache, time_start, time_end, all_m
             
         for currency in currency_list:
             back, metrics = eval_model(
+                    stop_loss = stop_loss,
                     model=model_detail.model,
                     currency=currency,
                     step=step,
@@ -130,7 +132,8 @@ def get_scorecoard(
     cache :CacheProvider,
     time_start,
     time_end,
-    use_trained_profit):
+    use_trained_profit,
+    stop_loss):
 
     scoreboard = []
 
@@ -142,7 +145,13 @@ def get_scorecoard(
         if (use_trained_profit):
             evaluated_models = recover_evalueted_list(minutes_list, all_models)
         else:
-            evaluated_models = eval_by_time(currency_list, minutes_list, cache, time_start, time_end, all_models)
+            evaluated_models = eval_by_time(
+                currency_list, 
+                minutes_list, 
+                cache, time_start, 
+                time_end, 
+                all_models,
+                stop_loss)
 
         
         if (len(evaluated_models) > 0):
@@ -158,7 +167,8 @@ def get_scorecoard(
     return scoreboard
 
 
-def get_best_model(currency_list, result_paths, timestamp, minutes_list, winner_path, use_trained_profit):
+def get_best_model(currency_list, result_paths, timestamp, minutes_list, winner_path, use_trained_profit,
+            stop_loss):
 
     cache = CacheProvider(
         currency_list=currency_list,
@@ -175,7 +185,8 @@ def get_best_model(currency_list, result_paths, timestamp, minutes_list, winner_
         cache = cache,
         time_start = time_start,
         time_end = time_end,
-        use_trained_profit = use_trained_profit
+        use_trained_profit = use_trained_profit,
+        stop_loss = stop_loss
         )
 
     selected_count = len(scoreboard)

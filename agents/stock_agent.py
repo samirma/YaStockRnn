@@ -8,6 +8,7 @@ class BackTest():
     
     def __init__(self, 
                  pending_sell_steps,
+                 stop_loss,
                  initial_value = 100, 
                  value = 100,
                  verbose = False,
@@ -19,6 +20,7 @@ class BackTest():
         self.pending_sell_steps = pending_sell_steps
         self.pending = -1
         self.sell_on_profit = sell_on_profit
+        self.stop_loss = stop_loss
         self.reset()
         
     def reset(self):
@@ -53,12 +55,21 @@ class BackTest():
         
         return is_valid
      
+    def is_obove_loss_limit(self, loss):
+        return loss < self.stop_loss
+
     def on_up(self, bid, ask):
         self.on_state()
         if (self.is_bought()):
             positive, profit = self.is_profit(bid)
+            should_sell = False
             if (positive):
                 self.log(f"Profit detected bid: {bid} ask: {ask}")
+                should_sell = True
+            elif (self.is_obove_loss_limit(profit)):
+                self.log(f"Loss limit dedected {self.stop_loss}: {bid} ask: {ask}")
+                should_sell = True
+            if (should_sell):
                 self.sell(bid)
         else:
             self.buy(ask)
@@ -99,10 +110,10 @@ class BackTest():
 
         if (positive):
             self.positive_trades.append(profit)
-            result = f"PROFIT {profit}"
+            result = f"PROFIT {profit}%"
         else:
             self.negative_trades.append(profit)
-            result = f"LOSS {profit}"
+            result = f"LOSS {profit}%"
         
         self.log(f'SOLD >>>> Result: {result} total: {self.current}')
         self.holding = 0

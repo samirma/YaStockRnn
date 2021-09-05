@@ -13,13 +13,10 @@ from eval_model import *
 from entities.models import *
 
 import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn.datasets import make_moons, make_circles, make_classification
-from sklearn.neighbors import KNeighborsClassifier
 from sklearn.gaussian_process.kernels import RBF
 from sklearn.tree import DecisionTreeClassifier
 from catboost import CatBoostClassifier
-from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
+from sklearn.ensemble import RandomForestClassifier
 import xgboost as xgb
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.ensemble import ExtraTreesClassifier
@@ -38,7 +35,9 @@ from sklearn.feature_selection import SelectFromModel
 from sklearn.svm import LinearSVC
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import RobustScaler, StandardScaler
-from tpot.builtins import StackingEstimator
+from sklearn.decomposition import FastICA
+from sklearn.naive_bayes import BernoulliNB
+from sklearn.feature_selection import SelectPercentile, f_classif
 
 from sklearn.metrics import confusion_matrix
 from sklearn.pipeline import Pipeline
@@ -82,11 +81,10 @@ def get_classifiers():
         lambda : TabNetClassifierEarly(verbose=0),
         
         lambda : make_pipeline(
-                        RobustScaler(),
-                        StandardScaler(),
-                        StackingEstimator(estimator=ExtraTreesClassifier(bootstrap=False, criterion="gini", max_features=0.9500000000000001, min_samples_leaf=4, min_samples_split=4, n_estimators=100)),
-                        KNeighborsClassifier(n_neighbors=56, p=2, weights="distance")
-                    ),
+                                SelectPercentile(score_func=f_classif, percentile=18),
+                                FastICA(tol=0.8500000000000001),
+                                BernoulliNB(alpha=10.0, fit_prior=False)
+                            ),
         
         lambda : DecisionTreeClassifier(random_state = 42),
         #lambda : RandomForestClassifier(max_depth=50, n_estimators=100, max_features=1),
@@ -140,6 +138,7 @@ def get_all_models(indexs_models):
         #models.append(MockCoPilotModel(cls(), getModel()))
         
         for est in estimators:
+            continue
             tmp = lambda : Pipeline(
                 steps=[
                 ('s',est()),

@@ -52,6 +52,7 @@ def eval_model(
     currency, 
     step,
     verbose, 
+    stop_loss,
     provider: OnLineDataProvider,
     cache: CacheProvider,
     hot_load_total):
@@ -70,18 +71,17 @@ def eval_model(
                                     hot_load = False,
                                     verbose = verbose,
                                     model = model,
+                                    stop_loss = stop_loss,
                                     simulate_on_price = True)
     agent.save_history = True
 
-    #print("aaaa")
     agent_cache_key = f"{minutes}_{win}"
     if agent_cache_key in cache.agent_cache:
-        #print(f"Exists {agent_cache_key}")
-        cache_list, cache_data = cache.agent_cache[agent_cache_key]
+        cache_list, cache_data, tec_index = cache.agent_cache[agent_cache_key]
         agent.list = cache_list.copy()
         agent.tec.data = cache_data.copy()
+        agent.tec.last_index = tec_index
     else:
-        #print(f"Creating cache for {agent_cache_key}")
         add_hot_load(
             minutes = minutes, 
             win = win, 
@@ -94,9 +94,8 @@ def eval_model(
             agent = agent,
             cache = cache
         )
-        cache.agent_cache[agent_cache_key] = (agent.list.copy(), agent.tec.data.copy())
-    #print(f"bbbb {agent.tec.data.copy()[-1]}")
-    #print(model_agent.history[-1])
+        cache.agent_cache[agent_cache_key] = (agent.list.copy(), agent.tec.data.copy(), agent.tec.last_index)
+
 
     model_agent.verbose = verbose
     back.verbose = verbose
@@ -154,13 +153,15 @@ def get_agent(minutes,
                 simulate_on_price,
                 hot_load, 
                 timestamp,
-                verbose
+                verbose,
+                stop_loss
                 ):
     
     back = BackTest(value = 100,
-                        verbose = verbose,
-                        pending_sell_steps = step, 
-                        sell_on_profit = True)
+                    stop_loss = stop_loss,
+                    verbose = verbose,
+                    pending_sell_steps = step, 
+                    sell_on_profit = True)
 
     request_sell = lambda bid, ask: back.on_down(bid = bid, ask = ask)
     request_buy = lambda bid, ask: back.on_up(bid = bid, ask = ask)

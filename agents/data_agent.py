@@ -57,6 +57,7 @@ class DataAgent():
         self.last_amount = -1
         self.last_timestamp = -1
         self.last_index = -1
+        self.tec.last_index = -1
         self.on_new_data = on_new_data
         self.on_state = on_state
         self.on_closed_price = on_closed_price
@@ -106,16 +107,45 @@ class DataAgent():
             timeframe = self.minutes * 60
             current_timestamp = int(current_index.timestamp())
             last_timestamp = int(self.last_index.timestamp())
-            diff = (current_timestamp - last_timestamp)
-            if (diff != timeframe):
-                error_msg = f"Diff {diff} Timeframe: {timeframe} last_index: {self.last_index} current_index: {current_index}"
-                raise Exception(error_msg)
+            if (current_timestamp < last_timestamp):
+                raise SystemExit(f"last_index: {self.last_index}({last_timestamp}) current_index: {current_index}({current_timestamp})")
+
+            self.check_consistency( 
+                                current_index = current_index, 
+                                last_index = self.last_index, 
+                                timeframe = timeframe, 
+                                tag = "AGENT"
+                                )
+            self.check_consistency( 
+                                current_index = current_index, 
+                                last_index = self.tec.last_index, 
+                                timeframe = timeframe, 
+                                tag = "AGENT"
+                                )
 
         self.list = self.list[-1:]
 
-        self.last_index = current_index
-                
+        self.update_index(current_index)
+
         self.on_new_price(timestamp, price, amount)
+
+    def update_index(self, current_index):
+        self.log(f"from {self.last_index} to {current_index}")
+        self.last_index = current_index
+        self.tec.last_index = current_index
+
+    def check_consistency(self, 
+                        current_index,
+                        last_index,
+                        timeframe,
+                        tag):
+        current_timestamp = int(current_index.timestamp())
+        last_timestamp = int(last_index.timestamp())
+        diff = (current_timestamp - last_timestamp)
+        if (diff != timeframe):
+            print(self.last_index_string)
+            error_msg = f"{tag} Diff {diff} Timeframe: {timeframe} last_index: {last_index}({last_timestamp}) current_index: {current_index}({current_timestamp})"
+            raise SystemExit(error_msg)
         
     def process_data_input(self, price, amount, timestamp):
         #print(f"{self.last_timestamp} -> {self.last_price} {amount}")

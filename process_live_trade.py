@@ -56,6 +56,9 @@ def init_raw_process(
     agent :DataAgent, 
     model_agent :ModelAgent
     ):
+
+    agent.verbose = True
+
     timestamp = int(datetime.timestamp((datetime.now())))
 
     step = minutes*60
@@ -79,17 +82,19 @@ def init_raw_process(
         recovered_date = pd.to_datetime(open_timestamp, unit='s')
         reference_date = pd.to_datetime(timestamp, unit='s')
 
-        #print(f"Pre {agent.last_index}")
+        print(f"Pre {agent.last_index}")
         agent.last_index = agent.process_data_input(
             price = open_price, 
             amount = open_amount, 
             timestamp = open_timestamp
             )
-        #print(f"Pos {agent.last_index} -> {agent.last_timestamp}")
+        print(f"Pos {agent.last_index} -> {agent.last_timestamp}")
         #print(f"Init reference_date: {reference_date} recovered_date: {recovered_date} ")
-    #print(f"Last index: {agent.last_index}")
+    last_index_string = f"Last index: {agent.last_index}"
+    agent.last_index_string = last_index_string
+    print(last_index_string)
 
-def start_process_by_result(result: ModelDetail, currency, simulate_on_price, hot_load):
+def start_process_by_result(result: ModelDetail, currency, simulate_on_price, hot_load, stop_loss):
     model = result.model
     window = result.data_detail.windows
     minutes = result.data_detail.minutes
@@ -104,9 +109,10 @@ def start_process_by_result(result: ModelDetail, currency, simulate_on_price, ho
                                     currency = currency,
                                     hot_load = hot_load,
                                     model = model,
+                                    stop_loss = stop_loss,
                                     timestamp = int(datetime.timestamp((datetime.now()))),
                                     simulate_on_price = simulate_on_price,
-                                    verbose = True)
+                                    verbose = False)
 
     back.verbose = True
     stock.verbose = True
@@ -158,6 +164,8 @@ if __name__ == '__main__':
         print(f"Process on currency: {args.currency}")
         print(f"result_paths_list: {args.result_paths_list}")
 
+        stop_loss =  -1
+
         timestamp = int(datetime.timestamp((datetime.now())))
         winner = get_best_model(
             minutes_list=args.minutes_list,
@@ -165,6 +173,7 @@ if __name__ == '__main__':
             currency_list=args.currency_list,
             timestamp = timestamp,
             winner_path = None,
+            stop_loss = stop_loss,
             use_trained_profit = args.use_trained_profit
         )
 
@@ -172,7 +181,9 @@ if __name__ == '__main__':
             result = winner, 
             currency = args.currency, 
             simulate_on_price = args.simulate_on_price, 
-            hot_load = args.hot_load)
+            hot_load = args.hot_load,
+            stop_loss = stop_loss
+            )
     elif (args.results_path != None and args.index != None):
         print(f"result_path --r: {args.result_path}")
         print(f"index --i: {args.index}")
