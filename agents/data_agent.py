@@ -8,26 +8,6 @@ from agents.tec_an import TecAn
 import datetime as dt
 
 
-class TacProcess():
-    def __init__(self):
-        self.old_price = -1
-        
-    def add_tacs(self, list, index, result):
-        list = []
-        #print(len(result[-1]))
-        #print(index)
-        for tec in result:
-            list.append(tec.iloc[index])
-        return list
-
-    def add_tacs_realtime(self, list, price, amount, tec: TecAn):
-        list = []
-        list.extend(tec.add_ta(price, amount))
-        self.old_price = price
-        #print("{} {} {}".format(price, amount, list))
-        return list
-    
-
 TIMESTAMP_KEY = "timestamp"
 MICROTIMESTAMP_KEY = "microtimestamp"
 ASKS_KEY = "asks"
@@ -35,6 +15,7 @@ BIDS_KEY = "bids"
 PRICE_KEY = "price"
 AMOUNT_KEY = "amount"
 CLOSE = 'close'
+DATE = 'Date'
 
 class DataAgent():
     
@@ -47,8 +28,7 @@ class DataAgent():
                  verbose = False,
                  save_history = False,
                  ):
-        self.taProc = TacProcess()
-        self.tec = tec
+        self.tec :TecAn = tec
         self.final_x = []
         self.list = []
         self.minutes = minutes
@@ -57,7 +37,6 @@ class DataAgent():
         self.last_amount = -1
         self.last_timestamp = -1
         self.last_index = -1
-        self.tec.last_index = -1
         self.on_new_data = on_new_data
         self.on_state = on_state
         self.on_closed_price = on_closed_price
@@ -94,17 +73,41 @@ class DataAgent():
         # Only consider when prices changes
         if (self.last_price == price and self.last_amount == amount and self.last_timestamp == timestamp):
             return
-        
+
+        self.log(f"1 last_index: {self.last_index}")
+
         current_index = self.process_data_input(price, amount, timestamp)
-        
-        #if (len(self.list) > self.raw_limit):
-        #    self.list.pop(0)
+
+        self.log(f"2 last_index: {self.last_index}")
 
         if (self.last_index == current_index):
+            self.log(f"Returning last_index: {self.last_index} current_index: {current_index}")
             return
 
+        self.log(f"22 last_index: {self.last_index}")
+
+        if (current_index == None):
+            raise SystemExit(f"{price}, {amount}, {timestamp}")
+
+        self.validate_data(current_index)
+
+        self.log(f"3 last_index: {self.last_index}")
+
+        self.list = self.list[-1:]
+
+        self.update_index(current_index)
+
+        self.log(f"4 last_index: {self.last_index}")
+
+        self.on_new_price(timestamp, price, amount)
+
+        self.log(f"5 last_index: {self.last_index}")
+
+    def validate_data(self, current_index):
         if (self.last_index != -1):
             timeframe = self.minutes * 60
+            #print(current_index)
+            #print(self.last_index)
             current_timestamp = int(current_index.timestamp())
             last_timestamp = int(self.last_index.timestamp())
             if (current_timestamp < last_timestamp):
@@ -116,23 +119,14 @@ class DataAgent():
                                 timeframe = timeframe, 
                                 tag = "AGENT"
                                 )
-            self.check_consistency( 
-                                current_index = current_index, 
-                                last_index = self.tec.last_index, 
-                                timeframe = timeframe, 
-                                tag = "AGENT"
-                                )
 
-        self.list = self.list[-1:]
+            if (self.tec.last_index != self.last_index):
+                raise SystemExit(f"Tec.last_index: {self.tec.last_index} last_index: {self.last_index}")
 
-        self.update_index(current_index)
-
-        self.on_new_price(timestamp, price, amount)
 
     def update_index(self, current_index):
-        self.log(f"from {self.last_index} to {current_index}")
+        self.log(f"--- --- --- --- --- from {self.last_index} to {current_index}")
         self.last_index = current_index
-        self.tec.last_index = current_index
 
     def check_consistency(self, 
                         current_index,
@@ -143,7 +137,6 @@ class DataAgent():
         last_timestamp = int(last_index.timestamp())
         diff = (current_timestamp - last_timestamp)
         if (diff != timeframe):
-            print(self.last_index_string)
             error_msg = f"{tag} Diff {diff} Timeframe: {timeframe} last_index: {last_index}({last_timestamp}) current_index: {current_index}({current_timestamp})"
             raise SystemExit(error_msg)
         
@@ -155,7 +148,6 @@ class DataAgent():
         timestamp_pd = pd.to_datetime(timestamp, unit='s')
         self.list.append([timestamp_pd, price])
 
-        DATE = 'Date'
         df = pd.DataFrame(self.list, columns = [DATE, CLOSE])
         df = df.set_index(pd.DatetimeIndex(df[DATE]))
                 
@@ -163,8 +155,6 @@ class DataAgent():
         ohlc = time.ohlc()
         
         self.ohlc = ohlc
-
-        #print(self.ohlc[-2:])
 
         return ohlc.index[-1]
 
@@ -175,7 +165,12 @@ class DataAgent():
 
     def on_new_price(self, timestamp, price, amount):
         self.on_closed_price(price)
-        x = self.taProc.add_tacs_realtime([], price, amount, self.tec)
+        x = self.tec.add_tacs_realtime(
+            list = [],
+            price = price, 
+            amount = amount, 
+            timestamp = timestamp
+            )
         is_up = self.on_new_data(x)
         action = AgentHistory(
                 timestamp = timestamp,
@@ -191,7 +186,7 @@ class DataAgent():
 
     def log(self, message):
         if (self.verbose):
-            print(f'{dt.datetime.now()} BackTest: {message}')
+            print(f'{dt.datetime.now()} DataAgent: {message}')
 
 
 class AgentHistory():

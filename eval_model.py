@@ -45,7 +45,7 @@ def add_hot_load(minutes,
     if (verbose):
         print(f"###### Past report({total}): {start}({timestamp_start}) - {end}({timestamp_end}) ######")
         back.report()
-        print(f"###### {agent.last_timestamp} ######")
+        print(f"###### {agent.last_index}({agent.last_timestamp})  ######")
 
 def eval_model(
     model, 
@@ -145,7 +145,8 @@ def eval_model(
     return back, metrics    
 
 
-def get_agent(minutes, 
+def get_agent(
+                minutes, 
                 win, 
                 step,
                 model,
@@ -188,7 +189,6 @@ def get_agent(minutes,
         on_new_data = on_new_data,
         verbose = False
     )
-    
     if (hot_load):
         add_hot_load(minutes, 
             win = win, 

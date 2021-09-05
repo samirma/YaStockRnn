@@ -151,6 +151,7 @@ class ModelAgent():
         self.last_action["action"] = ''
         self.history = []
         self.save_history = save_history
+        self.transction_enabled = True
         
     def on_x(self, x):
         y = self.model.predict(np.array([x]))
@@ -165,12 +166,13 @@ class ModelAgent():
         #print(self.best_buy)
         
     def on_predicted(self, y):
-        is_up = y > 0.5
-        if (is_up):
-            self.up()
-        else:
-            self.down()
-        return is_up
+        if (self.transction_enabled):
+            is_up = y > 0.5
+            if (is_up):
+                self.up()
+            else:
+                self.down()
+            return is_up
         
     def up(self):
         if (self.simulate_on_price):

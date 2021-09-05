@@ -58,17 +58,19 @@ def init_raw_process(
     ):
 
     agent.verbose = True
+    agent.tec.verbose = True
 
     timestamp = int(datetime.timestamp((datetime.now())))
 
+    print(f"agent: {agent.last_index} tec {agent.tec.last_index}")
+
     step = minutes*60
-    page = load_bitstamp_ohlc(
+    page = load_bitstamp_ohlc_by_period(
         currency_pair=currency,
-        start=agent.last_timestamp,
-        end=timestamp,
-        step=step,
-        limit=100,
-        verbose=False
+                start=agent.last_timestamp,
+                end=timestamp,
+                step=step,
+                verbose=False
         )
     
     for data in page:
@@ -81,24 +83,30 @@ def init_raw_process(
 
         recovered_date = pd.to_datetime(open_timestamp, unit='s')
         reference_date = pd.to_datetime(timestamp, unit='s')
+        order = [[f"{open_price}", f"{open_price}"]]
 
         print(f"Pre {agent.last_index}")
-        agent.last_index = agent.process_data_input(
+        last_index = agent.last_index
+        agent.last_index = agent.process_data(
             price = open_price, 
             amount = open_amount, 
-            timestamp = open_timestamp
+            timestamp = open_timestamp,
+            asks=order,
+            bids=order
             )
-        print(f"Pos {agent.last_index} -> {agent.last_timestamp}")
+        print(f"Pos {agent.last_index} -> {agent.tec.last_index}")
         #print(f"Init reference_date: {reference_date} recovered_date: {recovered_date} ")
-    last_index_string = f"Last index: {agent.last_index}"
-    agent.last_index_string = last_index_string
-    print(last_index_string)
+        start_timestamp = open_timestamp + step
+
+    print(agent.tec.last_index)
+    print(f"Process will start at {pd.to_datetime(start_timestamp, unit='s')}")
 
 def start_process_by_result(result: ModelDetail, currency, simulate_on_price, hot_load, stop_loss):
     model = result.model
     window = result.data_detail.windows
     minutes = result.data_detail.minutes
     step = result.data_detail.steps_ahead
+    print(f"############## Starting live process at {datetime.now()} ############## ")
     print(f"Minutes={minutes} Window={window} Step={step}")
     print(f"Simulate on price {simulate_on_price}")
     print(f"{model}")
@@ -112,7 +120,7 @@ def start_process_by_result(result: ModelDetail, currency, simulate_on_price, ho
                                     stop_loss = stop_loss,
                                     timestamp = int(datetime.timestamp((datetime.now()))),
                                     simulate_on_price = simulate_on_price,
-                                    verbose = False)
+                                    verbose = True)
 
     back.verbose = True
     stock.verbose = True

@@ -1,10 +1,10 @@
-import pandas as pd
 from ta.trend import *
 from ta.momentum import *
 from ta.volume import *
 from ta.volatility import *
-#from ta import add_all_ta_features, add_trend_ta, add_volume_ta, add_volatility_ta, add_momentum_ta, add_others_ta
+import datetime as dt
 import numpy as np
+import pandas as pd
 
 
 def ta_list(win, fillna=True):
@@ -47,7 +47,9 @@ class TecAn:
     
     def __init__(self, 
                  windows, 
-                 windows_limit = 100):
+                 verbose = False,
+                 windows_limit = 100,
+                 ):
         self.windows = windows
         self.tas = ta_list(self.windows)
         self.data = []
@@ -55,6 +57,9 @@ class TecAn:
         self.amount = 0
         self.indicators = []
         self.windows_limit = windows_limit
+        self.old_price = -1
+        self.verbose = verbose
+        self.last_timestamp = -1
     
     def method(self, ta, close, volume, price, amount, results, index):
         #print("Starting {}".format(ta))
@@ -108,6 +113,17 @@ class TecAn:
         self.amount = amount
         #print("new indices genereted")
         return list
+
+    def add_tacs_realtime(self, list, price, amount, timestamp):
+        list = []
+        list.extend(self.add_ta(price, amount))
+        self.old_price = price
+        self.last_index = pd.Timestamp(timestamp, unit='s')
+        return list
+
+    def log(self, message):
+        if (self.verbose):
+            print(f'{dt.datetime.now()} TecAn: {message}')
     
     def __str__(self):
         return "TecAn ( windows %s, windows_limit %s )" % (self.windows, self.windows_limit)
