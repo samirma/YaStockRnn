@@ -82,7 +82,7 @@ class DataAgent():
             #self.log(f"Returning {index_log}")
             return self.last_processed_index
 
-        self.log(f"{index_log}")
+        #self.log(f"{index_log}")
 
         if (current_index == None):
             raise SystemExit(f"{price}, {amount}, {timestamp}")
