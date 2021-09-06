@@ -36,7 +36,7 @@ class DataAgent():
         self.last_price = -1 
         self.last_amount = -1
         self.last_timestamp = -1
-        self.last_index = -1
+        self.last_processed_index = -1
         self.on_new_data = on_new_data
         self.on_state = on_state
         self.on_closed_price = on_closed_price
@@ -74,59 +74,55 @@ class DataAgent():
         if (self.last_price == price and self.last_amount == amount and self.last_timestamp == timestamp):
             return
 
-        self.log(f"1 last_index: {self.last_index}")
-
         current_index = self.process_data_input(price, amount, timestamp)
 
-        self.log(f"2 last_index: {self.last_index}")
+        index_log = f"last_index: {self.last_processed_index} current_index: {current_index}"
 
-        if (self.last_index == current_index):
-            self.log(f"Returning last_index: {self.last_index} current_index: {current_index}")
-            return
+        if (self.last_processed_index == current_index):
+            #self.log(f"Returning {index_log}")
+            return self.last_processed_index
 
-        self.log(f"22 last_index: {self.last_index}")
+        self.log(f"{index_log}")
 
         if (current_index == None):
             raise SystemExit(f"{price}, {amount}, {timestamp}")
 
         self.validate_data(current_index)
 
-        self.log(f"3 last_index: {self.last_index}")
-
         self.list = self.list[-1:]
 
         self.update_index(current_index)
 
-        self.log(f"4 last_index: {self.last_index}")
+        self.on_new_price(
+            timestamp=current_index.timestamp(),
+            price=price, 
+            amount=amount
+            )
 
-        self.on_new_price(timestamp, price, amount)
-
-        self.log(f"5 last_index: {self.last_index}")
 
     def validate_data(self, current_index):
-        if (self.last_index != -1):
+        if (self.last_processed_index != -1):
             timeframe = self.minutes * 60
             #print(current_index)
             #print(self.last_index)
             current_timestamp = int(current_index.timestamp())
-            last_timestamp = int(self.last_index.timestamp())
+            last_timestamp = int(self.last_processed_index.timestamp())
             if (current_timestamp < last_timestamp):
-                raise SystemExit(f"last_index: {self.last_index}({last_timestamp}) current_index: {current_index}({current_timestamp})")
+                raise SystemExit(f"last_index: {self.last_processed_index}({last_timestamp}) current_index: {current_index}({current_timestamp})")
 
             self.check_consistency( 
                                 current_index = current_index, 
-                                last_index = self.last_index, 
+                                last_index = self.last_processed_index, 
                                 timeframe = timeframe, 
                                 tag = "AGENT"
                                 )
 
-            if (self.tec.last_index != self.last_index):
-                raise SystemExit(f"Tec.last_index: {self.tec.last_index} last_index: {self.last_index}")
+            if (self.tec.last_index != self.last_processed_index):
+                raise SystemExit(f"Invalid indexes Tec.last_index: {self.tec.last_index} last_index: {self.last_processed_index}")
 
 
     def update_index(self, current_index):
-        self.log(f"--- --- --- --- --- from {self.last_index} to {current_index}")
-        self.last_index = current_index
+        self.last_processed_index = current_index
 
     def check_consistency(self, 
                         current_index,
@@ -156,7 +152,9 @@ class DataAgent():
         
         self.ohlc = ohlc
 
-        return ohlc.index[-1]
+        current_index = ohlc.index[-1]
+
+        return current_index
 
     
     def on_action(self, action):

@@ -62,7 +62,7 @@ def init_raw_process(
 
     timestamp = int(datetime.timestamp((datetime.now())))
 
-    print(f"agent: {agent.last_index} tec {agent.tec.last_index}")
+    #print(f"agent: {agent.last_processed_index} tec {agent.tec.last_index}")
 
     step = minutes*60
     page = load_bitstamp_ohlc_by_period(
@@ -85,8 +85,7 @@ def init_raw_process(
         reference_date = pd.to_datetime(timestamp, unit='s')
         order = [[f"{open_price}", f"{open_price}"]]
 
-        print(f"Pre {agent.last_index}")
-        last_index = agent.last_index
+        #print(f"Pre {agent.last_processed_index}")
         agent.last_index = agent.process_data(
             price = open_price, 
             amount = open_amount, 
@@ -94,11 +93,11 @@ def init_raw_process(
             asks=order,
             bids=order
             )
-        print(f"Pos {agent.last_index} -> {agent.tec.last_index}")
+        #print(f"Pos {agent.last_processed_index} -> {agent.tec.last_index} ")
         #print(f"Init reference_date: {reference_date} recovered_date: {recovered_date} ")
         start_timestamp = open_timestamp + step
 
-    print(agent.tec.last_index)
+    #print(agent.tec.last_index)
     print(f"Process will start at {pd.to_datetime(start_timestamp, unit='s')}")
 
 def start_process_by_result(result: ModelDetail, currency, simulate_on_price, hot_load, stop_loss):

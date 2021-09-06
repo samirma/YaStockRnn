@@ -45,7 +45,7 @@ def add_hot_load(minutes,
     if (verbose):
         print(f"###### Past report({total}): {start}({timestamp_start}) - {end}({timestamp_end}) ######")
         back.report()
-        print(f"###### {agent.last_index}({agent.last_timestamp})  ######")
+        print(f"###### {agent.last_processed_index}({agent.last_timestamp})  ######")
 
 def eval_model(
     model, 
