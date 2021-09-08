@@ -20,22 +20,36 @@ from tqdm import tqdm
 
 import argparse
 
-def print_evalueted_model(score):
-    profit = score['profit']
-    backs = score['backs']
-    result = score['model_detail']
-    print(profit)
+class EvaluetedModel():
+    
+    def __init__(self,
+                model_detail: ModelDetail,
+                currency,
+                back,
+                metrics,
+                stop_loss,
+                time_start,
+                time_end
+                 ):
+        self.model_detail = model_detail
+        self.back:BackTest = back
+        self.currency = currency
+        self.metrics = metrics
+        self.stop_loss = stop_loss
+        self.time_start = time_start
+        self.time_end = time_end
+
+def print_evalueted_model(score: EvaluetedModel):
+    back = score.back
+    trades = f"{len(back.positive_trades)} - {len(back.negative_trades)}"
+    result = score.model_detail
+    print(f"{score.currency} -> {back.current} | {trades}")
+    print(f"stop_loss: {score.stop_loss}")
     print_model_detail(result)
-    for key in backs:
-        back = backs[key]
-        #backs[back].report()
-        trades = f"{len(back.positive_trades)} - {len(back.negative_trades)}"
-        print(f"{key} -> {back.current} | {trades}")
     
 
-def order(e):
-    return e['profit']
-    #return e['result']['profit']
+def order(e :EvaluetedModel):
+    return e.back.get_profit()
 
 def load_results_path(results_path):
     try:
@@ -69,11 +83,7 @@ def eval_by_time(currency_list, minutes_list, cache, time_start, time_end, all_m
                 val_end = time_end
             )
             
-        profits = []
-        backs = {}
         score = {}
-            
-        has_negative = False
             
         for currency in currency_list:
             back, metrics = eval_model(
@@ -83,22 +93,22 @@ def eval_by_time(currency_list, minutes_list, cache, time_start, time_end, all_m
                     step=step,
                     provider=online,
                     verbose=False,
-                    cache = cache,
+                    cache=cache,
                     hot_load_total=500
                 )
-            back_profit = back.get_profit()
-            profits.append(back_profit)
-            backs[currency] = back
-                #print(f"{train_set} -> {back_profit}")
-            if (back_profit <= 0 and not has_negative):
-                has_negative = True
-            
-        profit = np.average(profits)
-        if (profit > 0):
-            score['profit'] = profit
-            score['backs'] = backs
-            score['model_detail'] = model_detail
-            evaluated_models.append(score)
+            profit = back.get_profit()
+            if (profit > 0):
+                evalueted_model = EvaluetedModel(
+                    currency = currency,
+                    metrics = metrics,
+                    back = back,
+                    model_detail = model_detail,
+                    stop_loss = stop_loss,
+                    time_start = time_start, 
+                    time_end = time_end
+                )
+                evaluated_models.append(evalueted_model)
+
     return evaluated_models
 
 
@@ -137,7 +147,7 @@ def get_scorecoard(
 
     scoreboard = []
 
-    for path in result_paths:
+    for path in tqdm(result_paths):
         print(f"Evaluating {path}")
         all_models = load_results_path(path)
 
@@ -167,16 +177,24 @@ def get_scorecoard(
     return scoreboard
 
 
-def get_best_model(currency_list, result_paths, timestamp, minutes_list, winner_path, use_trained_profit,
-            stop_loss):
+def get_best_model(
+    currency_list,
+    result_paths,
+    start_timestamp,
+    end_timestamp,    
+    minutes_list,
+    winner_path, 
+    use_trained_profit,
+    stop_loss
+    ):
 
     cache = CacheProvider(
         currency_list=currency_list,
         verbose = False
     )
 
-    time_start = timestamp - 36000
-    time_end = timestamp
+    time_start = start_timestamp - end_timestamp
+    time_end = start_timestamp
 
     scoreboard = get_scorecoard(
         currency_list = currency_list, 
@@ -201,28 +219,30 @@ def get_best_model(currency_list, result_paths, timestamp, minutes_list, winner_
 
     filtered = []
 
-    for score in scoreboard[-3:]:
-        profit = score['profit']
-        print_evalueted_model(score)
+    for score in scoreboard[-5:]:
+        eval_model :EvaluetedModel = score
+        profit = eval_model.back.get_profit()
+        print_evalueted_model(eval_model)
         print()
         filtered.append(profit)
     
-    best = scoreboard[-1]
+    best:EvaluetedModel = scoreboard[-1]
 
-    winner = best['model_detail']
-    print(f"Winner for {currency_list} -> {best['profit']}")
+    winner = best.model_detail
+    print(f"Winner for {currency_list} -> {best.back.get_profit()}")
     print_model_detail(winner)
-    backs = best['backs']
-    for back in backs:
-        backs[back].report()
+    backs = best.back
+    backs.report()
     if (winner_path != None):
-        dump(winner, winner_path)
+        dump(best, winner_path)
     print()
     return winner
 
 def add_arguments_winner(parser):
 
     minutes = [30, 15, 5, 3]
+
+    start_timestamp = int(datetime.timestamp((datetime.now())))
 
     path = "model/"
     files = os.listdir(path)
@@ -251,7 +271,8 @@ def add_arguments_winner(parser):
                 dest='currency_list',
                 help='Define currency_list',
                 action="store",
-                nargs='+'
+                nargs='+',
+                default=["btcusd", "ethusd", "ltcusd", "ltcbtc"],
                 )
 
     parser.add_argument('--winner_path',
@@ -260,7 +281,24 @@ def add_arguments_winner(parser):
                 action="store"
                 )
 
-    parser.add_argument('--use_trained_profit', dest="use_trained_profit", default=True, action=argparse.BooleanOptionalAction)
+    parser.add_argument('--start',
+                dest='start_timstamp',
+                help='Start timestamp',
+                action="store",
+                default=start_timestamp
+                )
+
+    parser.add_argument('--end',
+                dest='seconds_back',
+                help='seconds before start',
+                action="store",
+                default=259200,
+                )
+
+    parser.add_argument('--use_trained_profit', 
+                        dest="use_trained_profit", 
+                        default=False, 
+                        action=argparse.BooleanOptionalAction)
 
 
 if __name__ == '__main__':
@@ -271,20 +309,26 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    timestamp = int(datetime.timestamp((datetime.now())))
+    start_string = f"{pd.to_datetime(args.start_timstamp, unit='s')}({args.start_timstamp})"
+    end = args.start_timstamp - args.seconds_back
+    end_string = f"{pd.to_datetime(end, unit='s')}({end})"
 
     print(f"minutes: {args.minutes_list}")
-    print(f"currency_list: {args.currency_list}")
-    print(f"Result_paths: {args.result_paths_list}")
+    print(f"currency_list --cl: {args.currency_list}")
+    print(f"Result_paths --result_paths: {args.result_paths_list}")
     print(f"winner_path: {args.winner_path}")
+    print(f"--start: {start_string}")
+    print(f"--end: {end_string}")
     print(f"use_trained_profit --use_trained_profit: {args.use_trained_profit}")
 
     get_best_model(
         minutes_list=args.minutes_list,
         result_paths=args.result_paths_list,
         currency_list=args.currency_list,
-        timestamp = timestamp,
+        start_timestamp = args.start_timstamp,
+        end_timestamp = args.seconds_back,
         winner_path = args.winner_path,
-        use_trained_profit = args.use_trained_profit
+        use_trained_profit = args.use_trained_profit,
+        stop_loss=-1
     )
 

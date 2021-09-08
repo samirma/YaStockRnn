@@ -36,11 +36,17 @@ class RawStateDownloader(LiveBitstamp):
             #print(f'{datetime.now()}: {self.agent.on_new_data_count} {self.stock.get_last_action()} | {self.back.get_profit()}', end='\r')
         
 
-def start_process_path(result_path, currency, simulate_on_price, hot_load):
+def start_evalueted_path(evalueted_path, simulate_on_price, hot_load):
 
-    result = load(result_path) 
+    result :EvaluetedModel = load(evalueted_path)
 
-    start_process_by_result(result, currency, simulate_on_price, hot_load)
+    start_process_by_result(
+        result=result.model_detail,
+        currency=result.currency,
+        stop_loss=result.stop_loss,
+        simulate_on_price=simulate_on_price,
+        hot_load=hot_load
+    )
 
 def start_process_index(results_path, index, currency, simulate_on_price, hot_load):
     
@@ -138,6 +144,7 @@ def start_process_by_result(result: ModelDetail, currency, simulate_on_price, ho
     bt = Bitstamp(live, currency = currency)
 
     init_raw_process(currency, minutes, agent, stock)
+    back.reset()
 
     while (True):
         bt.connect()
@@ -148,8 +155,9 @@ if __name__ == '__main__':
 
     parser.add_argument('--m', dest="results_path", action="store")
     parser.add_argument('--i', dest="index", action="store")
+    parser.add_argument('--loss', dest="stop_loss", action="store", default=-0.1)
 
-    parser.add_argument('--r', dest="result_path", action="store")
+    parser.add_argument('--e', dest="evaluated_path", action="store")
     parser.add_argument('--c', dest="currency", action="store", default="btcusd")
 
     parser.add_argument('--p', dest="simulate_on_price", default=False, action=argparse.BooleanOptionalAction)
@@ -163,15 +171,24 @@ if __name__ == '__main__':
     print(f"simulate_on_price --p: {args.simulate_on_price}")
     print(f"currency --c: {args.currency}")
     print(f"hot_load --hot: {args.hot_load}")
+    print(f"stop_loss --loss: {args.stop_loss}")
     print(f"use_trained_profit --use_trained_profit: {args.use_trained_profit}")
 
-    if (args.result_paths_list != None and len(args.result_paths_list) > 0):
+
+    if (args.evaluated_path != None):
+        print(f"evaluated_path: {args.evaluated_path}")
+        start_evalueted_path(
+            evalueted_path = args.evaluated_path, 
+            simulate_on_price = args.simulate_on_price, 
+            hot_load = args.hot_load
+        )
+    elif (args.result_paths_list != None and len(args.result_paths_list) > 0):
         print(f"minutes: {args.minutes_list}")
         print(f"Evaluate on currency_list: {args.currency_list}")
         print(f"Process on currency: {args.currency}")
         print(f"result_paths_list: {args.result_paths_list}")
 
-        stop_loss =  -1
+        stop_loss = args.stop_loss
 
         timestamp = int(datetime.timestamp((datetime.now())))
         winner = get_best_model(
@@ -195,5 +212,3 @@ if __name__ == '__main__':
         print(f"result_path --r: {args.result_path}")
         print(f"index --i: {args.index}")
         start_process_index(results_path = args.results_path, index = args.index, currency = args.currency, simulate_on_price = args.simulate_on_price)
-    else:
-        start_process_path(args.result_path, currency = args.currency, simulate_on_price = args.simulate_on_price)

@@ -1,11 +1,12 @@
 import pandas as pd
 from data_util import *
 
-def get_max_profit(x, y, closed_prices, step):
+def get_max_profit(x, y, closed_prices, step, stop_loss):
 
     back = BackTest(value = 100, 
                     verbose = False, 
                     sell_on_profit = True,
+                    stop_loss=stop_loss,
                     pending_sell_steps = step)
     
 

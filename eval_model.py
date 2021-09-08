@@ -75,7 +75,7 @@ def eval_model(
                                     simulate_on_price = True)
     agent.save_history = True
 
-    agent_cache_key = f"{minutes}_{win}"
+    agent_cache_key = f"{currency}_{minutes}_{win}"
     if agent_cache_key in cache.agent_cache:
         cache_list, cache_data, tec_index = cache.agent_cache[agent_cache_key]
         agent.list = cache_list.copy()

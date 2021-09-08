@@ -62,11 +62,7 @@ def get_classifiers():
     clss = [
         lambda : CatBoostClassifier(logging_level = 'Silent'),
         
-        #lambda : make_pipeline(StandardScaler(),
-        #                        MLPClassifier(
-        #                            solver='lbfgs', alpha=1, random_state=1, max_iter=20000,
-        #                            early_stopping=True)
-        #                        ),
+        lambda : BernoulliNB(alpha=100.0, fit_prior=False),
 
         lambda : ExtraTreesClassifier(bootstrap=False, criterion="gini", max_features=0.9500000000000001, min_samples_leaf=10, min_samples_split=3, n_estimators=100),
         
@@ -121,7 +117,8 @@ def add_normalizers(models, cls):
     models.append(make_pipeline(StandardScaler(),cls()))
     models.append(make_pipeline(MinMaxScaler(),cls()))
     models.append(make_pipeline(Normalizer(),cls()))
-
+    models.append(make_pipeline(RobustScaler(),cls()))
+    
 
 def get_all_models(indexs_models):
     models = []
@@ -138,7 +135,7 @@ def get_all_models(indexs_models):
         #models.append(MockCoPilotModel(cls(), getModel()))
         
         for est in estimators:
-            continue
+            #continue
             tmp = lambda : Pipeline(
                 steps=[
                 ('s',est()),
@@ -152,7 +149,12 @@ def get_all_models(indexs_models):
 
 
 
-def run_trial(trained_model: TrainedModel, provider: OnLineDataProvider, step, cache: CacheProvider):
+def run_trial(
+    trained_model: TrainedModel, 
+    provider: OnLineDataProvider, 
+    step,
+    stop_loss,
+    cache: CacheProvider):
            
     reference_profit = {}
     models_profit = {}
@@ -165,7 +167,7 @@ def run_trial(trained_model: TrainedModel, provider: OnLineDataProvider, step, c
     for train_set in provider.val_keys:
         trainX_raw, trainY_raw, times = provider.load_val_data(train_set)
         x, y, closed_prices = get_sequencial_data(trainX_raw, trainY_raw, step)
-        reference = get_max_profit(x, y, closed_prices, step)
+        reference = get_max_profit(x, y, closed_prices, step, stop_loss=stop_loss)
 
         key = train_set
 
@@ -179,7 +181,8 @@ def run_trial(trained_model: TrainedModel, provider: OnLineDataProvider, step, c
                 cache = cache,
                 provider = provider,
                 hot_load_total = 100,
-                verbose = False
+                verbose = False,
+                stop_loss=stop_loss
                 )
         
         #models_profit[key] = f"{back.get_profit()}"
@@ -276,7 +279,14 @@ def order_by_proft(e:TrainedModel):
     #return e['models_profit_metric']['btcusd']
 
 
-def start_model_search(minutes, windows, steps, models_index_list, model_path, just_evaluate_model):
+def start_model_search(
+    minutes, 
+    windows, 
+    steps, 
+    models_index_list, 
+    model_path,
+    stop_loss, 
+    just_evaluate_model):
 
     train_model_detail_list = get_train_detail_list(
         minutes_list = minutes, 
@@ -292,15 +302,16 @@ def start_model_search(minutes, windows, steps, models_index_list, model_path, j
             )
 
     evaluate_trained_model_List(
-        train_model_detail_list = train_model_detail_list
+        train_model_detail_list = train_model_detail_list,
+        stop_loss = stop_loss
         )
 
-def evaluate_trained_model_List(train_model_detail_list):
+def evaluate_trained_model_List(train_model_detail_list, stop_loss):
     for data in train_model_detail_list:
         minutes, win, trained_model_path = data
         print(f"Scoring {trained_model_path}")
         trained_model_list = load(trained_model_path)
-        eval_models(trained_model_list)
+        eval_models(trained_model_list, stop_loss)
         suitable_model_list = []
         for best in trained_model_list:
             trained:TrainedModel = best
@@ -330,7 +341,7 @@ def evaluate_trained_model_List(train_model_detail_list):
             print("No suitable model found")
         dump(suitable_model_list, trained_model_path)
 
-def eval_models(models):
+def eval_models(models, stop_loss):
     print(f"Recovering profits")
     trained_model :TrainedModel = models[0]
     minutes = trained_model.model_detail.data_detail.minutes
@@ -344,7 +355,7 @@ def eval_models(models):
         windows = trained_model.model_detail.data_detail.windows
         steps_ahead = trained_model.model_detail.data_detail.steps_ahead
         provider = get_provider(minu = minutes, win = windows)        
-        run_trial(trained_model, provider, steps_ahead, cache=cache)
+        run_trial(trained_model, provider, steps_ahead, cache=cache, stop_loss=stop_loss)
 
 def add_arguments(parser):
     parser.add_argument('-l', '--list',
@@ -432,12 +443,16 @@ if __name__ == '__main__':
         for index in args.models_index_list:
             print(f"Model: {classifiers_temp[index]()}")
 
+
+        stop_loss = -1
+
         start_model_search(
             steps=args.steps,
             windows=args.windows,
             minutes=args.minutes,
             models_index_list=args.models_index_list,
             model_path=args.model_path,
+            stop_loss=stop_loss,
             just_evaluate_model = args.just_evaluate_model
         )
 
