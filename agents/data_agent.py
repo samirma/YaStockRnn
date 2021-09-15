@@ -70,20 +70,24 @@ class DataAgent():
         
         self.on_state(timestamp, price, bids, asks)
 
-        # Only consider when prices changes
-        if (self.last_price == price and self.last_amount == amount and self.last_timestamp == timestamp):
+        if (self.last_price == price):
+            #self.log(f"Same price {index_log} {price}")
             return
+        else:
+            self.last_price = price
 
         current_index = self.process_data_input(price, amount, timestamp)
 
-        index_log = f"last_index: {self.last_processed_index} current_index: {current_index}"
+        index_log = f"last_index: {self.last_processed_index} current_index: {current_index}  price: {price}"
 
         if (self.last_processed_index == current_index):
             #self.log(f"Returning {index_log}")
             return self.last_processed_index
+        #else:
+        #    self.log(f"New block {index_log} {price}")
 
-        #self.log(f"{index_log}")
-
+        #self.log(f"{index_log} - last_price: {self.last_price} = price: {price}")
+        
         if (current_index == None):
             raise SystemExit(f"{price}, {amount}, {timestamp}")
 
@@ -134,11 +138,11 @@ class DataAgent():
         diff = (current_timestamp - last_timestamp)
         if (diff != timeframe):
             error_msg = f"{tag} Diff {diff} Timeframe: {timeframe} last_index: {last_index}({last_timestamp}) current_index: {current_index}({current_timestamp})"
-            raise SystemExit(error_msg)
+            print(error_msg)
+            #raise SystemExit(error_msg)
         
     def process_data_input(self, price, amount, timestamp):
         #print(f"{self.last_timestamp} -> {self.last_price} {amount}")
-        self.last_price = price 
         self.last_amount = amount
         self.last_timestamp = timestamp
         timestamp_pd = pd.to_datetime(timestamp, unit='s')
@@ -180,7 +184,8 @@ class DataAgent():
          
     def report(self):
         for data in self.history:
-            print(f"{data.timestamp} - {data.price} - {data.is_up}")
+            val_end = int(data.timestamp)
+            print(f"{pd.to_datetime(val_end, unit='s')}({val_end}) - {data.price} - {data.is_up}")
 
     def log(self, message):
         if (self.verbose):

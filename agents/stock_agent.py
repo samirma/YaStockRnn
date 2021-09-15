@@ -84,7 +84,10 @@ class BackTest():
     def report(self):
         percentage = self.get_profit()
         print(f'{percentage}% -> {self.current}')
-        print(f'Positive: {len(self.positive_trades)}({np.average(self.positive_trades)}) Negative: {len(self.negative_trades)}({np.average(self.negative_trades)})')
+        negative = 0
+        if (len(self.negative_trades) > 0):
+            negative = np.average(self.negative_trades)
+        print(f'Positive: {len(self.positive_trades)}({np.average(self.positive_trades)}) Negative: {len(self.negative_trades)}({negative})')
         
     def get_profit(self):
         percentage = ((self.current*100)/self.initial_value) - 100

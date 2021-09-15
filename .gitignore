@@ -107,7 +107,7 @@ venv.bak/
 *.h5
 
 /stock_data
-
+/best_models
 
 .DS_Store
 bitstamp.ipynb

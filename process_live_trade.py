@@ -40,6 +40,10 @@ def start_evalueted_path(evalueted_path, simulate_on_price, hot_load):
 
     result :EvaluetedModel = load(evalueted_path)
 
+    print("#############")
+    print_evalueted_model(result)
+    print("#############")
+
     start_process_by_result(
         result=result.model_detail,
         currency=result.currency,
@@ -63,8 +67,8 @@ def init_raw_process(
     model_agent :ModelAgent
     ):
 
-    agent.verbose = True
-    agent.tec.verbose = True
+    agent.verbose = False
+    agent.tec.verbose = False
 
     timestamp = int(datetime.timestamp((datetime.now())))
 
@@ -155,7 +159,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--m', dest="results_path", action="store")
     parser.add_argument('--i', dest="index", action="store")
-    parser.add_argument('--loss', dest="stop_loss", action="store", default=-0.1)
+    parser.add_argument('--loss', dest="stop_loss", action="store", default=-1)
 
     parser.add_argument('--e', dest="evaluated_path", action="store")
     parser.add_argument('--c', dest="currency", action="store", default="btcusd")

@@ -11,7 +11,7 @@ from model import *
 from providers import *
 from eval_model import *
 from entities.models import *
-
+from sklearn.naive_bayes import BernoulliNB, GaussianNB
 import numpy as np
 from sklearn.gaussian_process.kernels import RBF
 from sklearn.tree import DecisionTreeClassifier
@@ -24,7 +24,7 @@ from sklearn.ensemble import ExtraTreesClassifier
 from joblib import dump, load
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, Normalizer
-from sklearn.datasets import make_moons, make_circles, make_classification
+from sklearn.pipeline import make_pipeline, make_union
 from sklearn.neural_network import MLPClassifier
 from sklearn.svm import SVC
 from sklearn.gaussian_process import GaussianProcessClassifier
@@ -38,6 +38,9 @@ from sklearn.preprocessing import RobustScaler, StandardScaler
 from sklearn.decomposition import FastICA
 from sklearn.naive_bayes import BernoulliNB
 from sklearn.feature_selection import SelectPercentile, f_classif
+from tpot.builtins import StackingEstimator, ZeroCount
+from sklearn.linear_model import SGDClassifier
+from sklearn.decomposition import PCA
 
 from sklearn.metrics import confusion_matrix
 from sklearn.pipeline import Pipeline

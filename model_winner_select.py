@@ -43,8 +43,10 @@ def print_evalueted_model(score: EvaluetedModel):
     back = score.back
     trades = f"{len(back.positive_trades)} - {len(back.negative_trades)}"
     result = score.model_detail
-    print(f"{score.currency} -> {back.current} | {trades}")
-    print(f"stop_loss: {score.stop_loss}")
+    print(f"{score.currency} -> {back.current} | {trades} | stop_loss: {score.stop_loss}")
+    start_string = f"{pd.to_datetime(score.time_start, unit='s')}({score.time_start})"
+    end_string = f"{pd.to_datetime(score.time_end, unit='s')}({score.time_end})"
+    print(f"Eveluated timeframe: from {start_string} to {end_string}")
     print_model_detail(result)
     
 
@@ -54,15 +56,21 @@ def order(e :EvaluetedModel):
 def load_results_path(results_path):
     try:
         saved_models = load(results_path)
-        print(f"{results_path} - {len(saved_models)}")
+        print(f"loaded: {results_path} - {len(saved_models)}")
     except:
         saved_models = []
     return saved_models
 
-def eval_by_time(currency_list, minutes_list, cache, time_start, time_end, all_models,
-            stop_loss):
+def eval_by_time(currency_list,
+            minutes_list, 
+            cache:CacheProvider,
+            time_start, 
+            time_end, 
+            all_models,
+            stop_loss_list):
     evaluated_models = []
-    for best in tqdm(all_models):
+    data_list = []
+    for best in all_models:
         trained_model :TrainedModel = best 
         model_detail = trained_model.model_detail
         windows = trained_model.model_detail.data_detail.windows
@@ -71,10 +79,19 @@ def eval_by_time(currency_list, minutes_list, cache, time_start, time_end, all_m
 
         if minutes not in minutes_list :
             continue
+            
+        for stop_loss in stop_loss_list:
+            for currency in currency_list:
+                data_list.append((stop_loss, model_detail, currency))
 
-        current_time = int(datetime.timestamp((datetime.now())))
-        if (current_time < (time_end + (minutes * 60))):
-            time_end = (time_end - (minutes * 60))
+    for data in tqdm(data_list):
+        stop_loss = data[0]
+        model_detail:ModelDetail = data[1] 
+        currency = data[2]
+
+        windows = model_detail.data_detail.windows
+        minutes = model_detail.data_detail.minutes
+        step = model_detail.data_detail.steps_ahead
 
         online:OnLineDataProvider = cache.get_provider(
                 minutes = minutes,
@@ -82,32 +99,29 @@ def eval_by_time(currency_list, minutes_list, cache, time_start, time_end, all_m
                 val_start = time_start,
                 val_end = time_end
             )
-            
-        score = {}
-            
-        for currency in currency_list:
-            back, metrics = eval_model(
-                    stop_loss = stop_loss,
-                    model=model_detail.model,
-                    currency=currency,
-                    step=step,
-                    provider=online,
-                    verbose=False,
-                    cache=cache,
-                    hot_load_total=500
-                )
-            profit = back.get_profit()
-            if (profit > 0):
-                evalueted_model = EvaluetedModel(
-                    currency = currency,
-                    metrics = metrics,
-                    back = back,
-                    model_detail = model_detail,
-                    stop_loss = stop_loss,
-                    time_start = time_start, 
-                    time_end = time_end
-                )
-                evaluated_models.append(evalueted_model)
+        
+        back, metrics = eval_model(
+                stop_loss = stop_loss,
+                model=model_detail.model,
+                currency=currency,
+                step=step,
+                provider=online,
+                verbose=False,
+                cache=cache,
+                hot_load_total=500
+            )
+        profit = back.get_profit()
+        if (profit > 0):
+            evalueted_model = EvaluetedModel(
+                currency = currency,
+                metrics = metrics,
+                back = back,
+                model_detail = model_detail,
+                stop_loss = stop_loss,
+                time_start = time_start, 
+                time_end = time_end
+            )
+            evaluated_models.append(evalueted_model)
 
     return evaluated_models
 
@@ -143,7 +157,7 @@ def get_scorecoard(
     time_start,
     time_end,
     use_trained_profit,
-    stop_loss):
+    stop_loss_list):
 
     scoreboard = []
 
@@ -158,10 +172,11 @@ def get_scorecoard(
             evaluated_models = eval_by_time(
                 currency_list, 
                 minutes_list, 
-                cache, time_start, 
+                cache, 
+                time_start, 
                 time_end, 
                 all_models,
-                stop_loss)
+                stop_loss_list)
 
         
         if (len(evaluated_models) > 0):
@@ -185,7 +200,7 @@ def get_best_model(
     minutes_list,
     winner_path, 
     use_trained_profit,
-    stop_loss
+    stop_loss_list
     ):
 
     cache = CacheProvider(
@@ -204,7 +219,7 @@ def get_best_model(
         time_start = time_start,
         time_end = time_end,
         use_trained_profit = use_trained_profit,
-        stop_loss = stop_loss
+        stop_loss_list = stop_loss_list
         )
 
     selected_count = len(scoreboard)
@@ -229,10 +244,10 @@ def get_best_model(
     best:EvaluetedModel = scoreboard[-1]
 
     winner = best.model_detail
-    print(f"Winner for {currency_list} -> {best.back.get_profit()}")
-    print_model_detail(winner)
-    backs = best.back
-    backs.report()
+    print(f"#####################")
+    print(f"Winner for {best.currency} -> {best.back.get_profit()}")
+    print_evalueted_model(best)
+    best.back.report()
     if (winner_path != None):
         dump(best, winner_path)
     print()
@@ -295,6 +310,14 @@ def add_arguments_winner(parser):
                 default=259200,
                 )
 
+    parser.add_argument('--losses',
+                dest='losses',
+                help='stop losses list',
+                action="store",
+                nargs='+',
+                default=[-100, -1, -0.5, -0.1],
+                )
+
     parser.add_argument('--use_trained_profit', 
                         dest="use_trained_profit", 
                         default=False, 
@@ -313,13 +336,16 @@ if __name__ == '__main__':
     end = args.start_timstamp - args.seconds_back
     end_string = f"{pd.to_datetime(end, unit='s')}({end})"
 
+    print(f"############################")
     print(f"minutes: {args.minutes_list}")
     print(f"currency_list --cl: {args.currency_list}")
     print(f"Result_paths --result_paths: {args.result_paths_list}")
     print(f"winner_path: {args.winner_path}")
+    print(f"--losses: {args.losses}")
     print(f"--start: {start_string}")
     print(f"--end: {end_string}")
     print(f"use_trained_profit --use_trained_profit: {args.use_trained_profit}")
+    print(f"############################")
 
     get_best_model(
         minutes_list=args.minutes_list,
@@ -329,6 +355,6 @@ if __name__ == '__main__':
         end_timestamp = args.seconds_back,
         winner_path = args.winner_path,
         use_trained_profit = args.use_trained_profit,
-        stop_loss=-1
+        stop_loss_list=args.losses
     )
 
